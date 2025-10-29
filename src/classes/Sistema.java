@@ -1,22 +1,20 @@
 package src.classes;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-import java.io.File;
-import java.io.IOException;
+import java.util.*;
 
 public class Sistema {
     private Map<Integer, Reserva> reservas = new HashMap<>();
     private Map<Integer, Habitacion> habitaciones = new HashMap<>();
-    private Map<Integer, Huespede> huespedes = new HashMap<>();
+    private Map<String, Huespede> huespedes = new HashMap<>();
     private Map<Integer, Factura> facturas = new HashMap<>();
     private int maxIdHabitacion;
     private int maxIdHuespede;
     private int maxIdFactura;
     private int maxIdReserva;
 
-    public Sistema(String habitacionesFile, String huespedeFile, String facturaFile, String idHabitacionesFile, String idHuespedeFile, String idFacturaFile) {
+    public Sistema(String habitacionesFile, String huespedeFile, String facturaFile,
+                   String idHabitacionesFile, String idHuespedeFile, String idFacturaFile) {
         reservas = new HashMap<>();
         habitaciones = new HashMap<>();
         huespedes = new HashMap<>();
@@ -33,8 +31,7 @@ public class Sistema {
     }
 
     public void agregarHuespede(Huespede huespede) {
-        maxIdHuespede++;
-        huespedes.put(maxIdHuespede, huespede);
+        huespedes.put(huespede.getDNI(), huespede);
     }
 
     private void agregarFactura(Factura factura) {
@@ -46,7 +43,8 @@ public class Sistema {
         facturas.remove(idFactura);
     }
 
-    public void agregarReserva(int idHabitacion, int idHuespede, Factura factura, LocalDate desde, LocalDate hasta) {
+    public void agregarReserva(int idHabitacion, int idHuespede, Factura factura,
+                               java.time.LocalDate desde, java.time.LocalDate hasta) {
         maxIdReserva++;
         agregarFactura(factura);
         Reserva reserva = new Reserva(idHabitacion, idHuespede, maxIdFactura, desde, hasta);
@@ -57,5 +55,9 @@ public class Sistema {
         Reserva res = reservas.get(idReserva);
         borrarFactura(res.getIdFactura());
         reservas.remove(idReserva);
+    }
+
+    public Map<Integer, Habitacion> getHabitaciones() {
+        return Collections.unmodifiableMap(habitaciones);
     }
 }

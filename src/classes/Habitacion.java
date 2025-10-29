@@ -21,10 +21,13 @@ public class Habitacion {
         switch (tipo) {
             case INDIVIDUAL:
                 this.capacidad = 2;
+                break;
             case MATRIMONIAL:
                 this.capacidad = 3;
+                break;
             case COMPARTIDA:
                 this.capacidad = 5;
+                break;
         }
 
     }
