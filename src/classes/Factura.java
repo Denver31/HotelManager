@@ -21,11 +21,13 @@ public class Factura {
     private double pagado;
     private int cantPagos;
     private tipoDePago tipo;
+    private metodoDePago metodo;
     private LocalDate pagarHasta;
     public Factura(double total, tipoDePago tipo, metodoDePago metodo, int cantPagos, LocalDate pagarHasta) {
         this.tipo = tipo;
         this.pagado = 0;
         this.pagarHasta = pagarHasta;
+        this.metodo=metodo;
 
         switch (metodo) {
             case TRANSFERENCIA:
@@ -69,5 +71,8 @@ public class Factura {
     public boolean esExpirado() {
         LocalDate today = LocalDate.now();
         return today.isAfter(pagarHasta);
+    }
+    public metodoDePago getMetodo(){
+        return this.metodo;
     }
 }

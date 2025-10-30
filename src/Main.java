@@ -1,18 +1,46 @@
 package src;
 
+import src.classes.Factura;
 import src.classes.Habitacion;
 import src.classes.Huespede;
+import src.storage.FacturaStorage;
 import src.storage.HabitacionStorage;
 import src.storage.HuespedeStorage;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
 //        test_habitaciones_storage();
-        test_huespedes_storage();
+//        test_huespedes_storage();
+        test_facturas_storage();
     }
-    public static void test_huespedes_storage(){
+
+    public static void test_facturas_storage() {
+        FacturaStorage storage = new FacturaStorage("hotel.db");
+        Factura f1 = new Factura(
+                12.23,
+                Factura.tipoDePago.TOTAL,
+                Factura.metodoDePago.TARJETA,
+                1,
+                LocalDate.now()
+        );
+
+        storage.save(f1);
+        Map<Integer, Factura> facturas = storage.getAll();
+
+        for (Integer id : facturas.keySet()) {
+            Factura f = facturas.get(id);
+            System.out.println(id + " | " + f.getTotal() + f.getMetodo() + f.getPagarHasta());
+        }
+        f1 = facturas.get(1);
+        if (f1 != null) {
+            System.out.println("id 1: " + f1.getTotal());
+        }
+    }
+
+    public static void test_huespedes_storage() {
         HuespedeStorage storage = new HuespedeStorage("hotel.db");
         Huespede h1 = new Huespede(
                 "Daniil Geevich",
@@ -31,7 +59,7 @@ public class Main {
         }
     }
 
-    public static void test_habitaciones_storage(){
+    public static void test_habitaciones_storage() {
         HabitacionStorage storage = new HabitacionStorage("hotel.db");
         Habitacion h1 = new Habitacion(
                 "Test Arsenii Huilo Deluxe",
