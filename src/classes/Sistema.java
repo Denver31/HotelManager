@@ -43,11 +43,11 @@ public class Sistema {
         facturas.remove(idFactura);
     }
 
-    public void agregarReserva(int idHabitacion, int idHuespede, Factura factura,
+    public void agregarReserva(int idHabitacion, String dniHuespede, Factura factura,
                                java.time.LocalDate desde, java.time.LocalDate hasta) {
         maxIdReserva++;
         agregarFactura(factura);
-        Reserva reserva = new Reserva(idHabitacion, idHuespede, maxIdFactura, desde, hasta);
+        Reserva reserva = new Reserva(idHabitacion, dniHuespede, maxIdFactura, desde, hasta);
         reservas.put(maxIdReserva, reserva);
     }
 
@@ -57,7 +57,15 @@ public class Sistema {
         reservas.remove(idReserva);
     }
 
+    public Habitacion getHabitacionById(int idHabitacion) {
+        return habitaciones.get(idHabitacion);
+    }
+
     public Map<Integer, Habitacion> getHabitaciones() {
         return Collections.unmodifiableMap(habitaciones);
+    }
+
+    public Map<Integer, Factura> getFacturas() {
+        return Collections.unmodifiableMap(facturas);
     }
 }
