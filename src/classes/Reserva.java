@@ -5,14 +5,14 @@ import java.time.LocalDate;
 public class Reserva {
 
     private int idHabitacion;
-    private int idHuespede;
+    private String dniHuespede;
     private int idFactura;
     private LocalDate desde;
     private LocalDate hasta;
 
-    public Reserva(int idHabitacion, int idHuespede, int idFactura, LocalDate desde, LocalDate hasta) {
+    public Reserva(int idHabitacion, String dniHuespede, int idFactura, LocalDate desde, LocalDate hasta) {
         this.idHabitacion = idHabitacion;
-        this.idHuespede = idHuespede;
+        this.dniHuespede = dniHuespede;
         this.idFactura = idFactura;
         this.desde = desde;
         this.hasta = hasta;
@@ -22,8 +22,8 @@ public class Reserva {
         return idHabitacion;
     }
 
-    public int getIdHuespede() {
-        return idHuespede;
+    public String getDNIHuespede() {
+        return dniHuespede;
     }
 
     public int getIdFactura() {
