@@ -1,5 +1,7 @@
 package src.Interface;
 
+import src.classes.Habitacion;
+import src.classes.Factura;
 import src.classes.Sistema;
 
 import javax.swing.*;
@@ -7,116 +9,112 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 
 public class NuevaReservaForm extends JFrame {
 
-    private JTextField habitacionIdField; // сюда кладём выбранный ID
+    // UI fields
+    private JTextField habitacionIdField;
     private JTextField dniField;
     private JTextField nombreField;
     private JTextField apellidoField;
+    private JSpinner  desdeSpinner;
+    private JSpinner  hastaSpinner;
+    private JComboBox<String> metodoCombo;
+    private JSpinner  cantPagosSpinner;
 
-    // новые поля дат
-    private JSpinner desdeSpinner;
-    private JSpinner hastaSpinner;
+    // Style
+    private final Color fondo  = new Color(245, 247, 250);
+    private final Color acento = new Color(0, 120, 215);
+
+    // Data
+    private final Sistema sistema;
 
     public NuevaReservaForm(Sistema sistema) {
+        this.sistema = sistema;
+        setupFrame();
+        add(buildMainPanel());
+    }
+
+    /* =========================
+     *     FRAME / PANELS
+     * ========================= */
+    private void setupFrame() {
         setTitle("Nueva Reserva");
-        setSize(560, 420);
+        setSize(560, 520);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
 
-        Color fondo = new Color(245, 247, 250);
-        Color acento = new Color(0, 120, 215);
+    private JPanel buildMainPanel() {
+        JPanel main = new JPanel(new BorderLayout(10, 10));
+        main.setBackground(fondo);
+        main.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBackground(fondo);
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        main.add(buildTitle(), BorderLayout.NORTH);
+        main.add(buildFormPanel(), BorderLayout.CENTER);
+        main.add(buildButtonPanel(), BorderLayout.SOUTH);
 
-        JLabel titulo = new JLabel("📝 Crear nueva reserva");
+        return main;
+    }
+
+    private JComponent buildTitle() {
+        JLabel titulo = new JLabel("📝 Crear nueva reserva", SwingConstants.CENTER);
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         titulo.setForeground(acento);
-        titulo.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titulo, BorderLayout.NORTH);
+        return titulo;
+    }
 
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(fondo);
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 6, 6, 6);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0;
+    private JPanel buildFormPanel() {
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(fondo);
+        GridBagConstraints c = baseGbc();
 
-        JLabel habitacionLabel = new JLabel("Habitación (ID):");
-        JLabel dniLabel = new JLabel("DNI o Pasaporte del cliente:");
-        JLabel nombreLabel = new JLabel("Nombre del cliente:");
-        JLabel apellidoLabel = new JLabel("Apellido del cliente:");
-        JLabel desdeLabel = new JLabel("Desde (fecha):");
-        JLabel hastaLabel = new JLabel("Hasta (fecha):");
+        // Fields init
+        initCoreFields();
 
-        Font lf = new Font("Segoe UI", Font.PLAIN, 14);
-        habitacionLabel.setFont(lf);
-        dniLabel.setFont(lf);
-        nombreLabel.setFont(lf);
-        apellidoLabel.setFont(lf);
-        desdeLabel.setFont(lf);
-        hastaLabel.setFont(lf);
+        // Row 0: Habitación
+        addL(form, "Habitación (ID):", c, 0, 0);
+        addF(form, habitacionIdField, c, 1, 0);
+        addF(form, buildSelectHabitacionButton(), c, 2, 0, 0);
 
-        habitacionIdField = new JTextField();
-        habitacionIdField.setEditable(false); // не редактируем вручную
-        JButton seleccionarBtn = new JButton("Seleccionar habitación…");
-        seleccionarBtn.addActionListener(e -> {
-            SeleccionarHabitacionDialog dlg = new SeleccionarHabitacionDialog(this, sistema);
-            dlg.setVisible(true);
-            Integer id = dlg.getSelectedHabitacionId();
-            if (id != null) {
-                habitacionIdField.setText(String.valueOf(id));
-            }
-        });
+        // Row 1: DNI
+        addL(form, "DNI o Pasaporte del cliente:", c, 0, 1);
+        addFSpan2(form, dniField, c, 1, 1);
 
-        dniField = new JTextField();
-        nombreField = new JTextField();
-        apellidoField = new JTextField();
+        // Row 2: Nombre
+        addL(form, "Nombre del cliente:", c, 0, 2);
+        addFSpan2(form, nombreField, c, 1, 2);
 
-        // --- Спиннеры дат (без внешних библиотек) ---
-        Date hoy = new Date();
+        // Row 3: Apellido
+        addL(form, "Apellido del cliente:", c, 0, 3);
+        addFSpan2(form, apellidoField, c, 1, 3);
 
-        SpinnerDateModel desdeModel = new SpinnerDateModel(hoy, null, null, Calendar.DAY_OF_MONTH);
-        desdeSpinner = new JSpinner(desdeModel);
-        JSpinner.DateEditor desdeEditor = new JSpinner.DateEditor(desdeSpinner, "yyyy-MM-dd");
-        desdeSpinner.setEditor(desdeEditor);
+        // Row 4-5: Fechas
+        addL(form, "Desde (fecha):", c, 0, 4);
+        addFSpan2(form, desdeSpinner, c, 1, 4);
 
-        SpinnerDateModel hastaModel = new SpinnerDateModel(hoy, null, null, Calendar.DAY_OF_MONTH);
-        hastaSpinner = new JSpinner(hastaModel);
-        JSpinner.DateEditor hastaEditor = new JSpinner.DateEditor(hastaSpinner, "yyyy-MM-dd");
-        hastaSpinner.setEditor(hastaEditor);
+        addL(form, "Hasta (fecha):", c, 0, 5);
+        addFSpan2(form, hastaSpinner, c, 1, 5);
 
-        // --- Размещение ---
-        c.gridx = 0; c.gridy = 0; formPanel.add(habitacionLabel, c);
-        c.gridx = 1; c.gridy = 0; c.weightx = 1; formPanel.add(habitacionIdField, c);
-        c.gridx = 2; c.gridy = 0; c.weightx = 0; formPanel.add(seleccionarBtn, c);
+        // Row 6-7: Pago
+        addL(form, "Método de pago:", c, 0, 6);
+        addFSpan2(form, metodoCombo, c, 1, 6);
 
-        c.gridx = 0; c.gridy = 1; c.weightx = 0; formPanel.add(dniLabel, c);
-        c.gridx = 1; c.gridy = 1; c.gridwidth = 2; c.weightx = 1; formPanel.add(dniField, c);
-        c.gridwidth = 1;
+        addL(form, "Cantidad de pagos:", c, 0, 7);
+        addFSpan2(form, cantPagosSpinner, c, 1, 7);
 
-        c.gridx = 0; c.gridy = 2; c.weightx = 0; formPanel.add(nombreLabel, c);
-        c.gridx = 1; c.gridy = 2; c.gridwidth = 2; c.weightx = 1; formPanel.add(nombreField, c);
-        c.gridwidth = 1;
+        // listeners depend on initialized fields
+        setupPaymentControls();
 
-        c.gridx = 0; c.gridy = 3; c.weightx = 0; formPanel.add(apellidoLabel, c);
-        c.gridx = 1; c.gridy = 3; c.gridwidth = 2; c.weightx = 1; formPanel.add(apellidoField, c);
-        c.gridwidth = 1;
+        return form;
+    }
 
-        c.gridx = 0; c.gridy = 4; c.weightx = 0; formPanel.add(desdeLabel, c);
-        c.gridx = 1; c.gridy = 4; c.gridwidth = 2; c.weightx = 1; formPanel.add(desdeSpinner, c);
-        c.gridwidth = 1;
-
-        c.gridx = 0; c.gridy = 5; c.weightx = 0; formPanel.add(hastaLabel, c);
-        c.gridx = 1; c.gridy = 5; c.gridwidth = 2; c.weightx = 1; formPanel.add(hastaSpinner, c);
-        c.gridwidth = 1;
-
-        mainPanel.add(formPanel, BorderLayout.CENTER);
+    private JPanel buildButtonPanel() {
+        JPanel panel = new JPanel();
+        panel.setBackground(fondo);
 
         JButton crearBtn = new JButton("Crear reserva");
         crearBtn.setBackground(acento);
@@ -124,66 +122,194 @@ public class NuevaReservaForm extends JFrame {
         crearBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
         crearBtn.setFocusPainted(false);
         crearBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        crearBtn.addActionListener(e -> onCreateReserva());
 
-        crearBtn.addActionListener(e -> {
-            String habitacionIdStr = habitacionIdField.getText().trim();
-            String dni = dniField.getText().trim();
-            String nombre = nombreField.getText().trim();
-            String apellido = apellidoField.getText().trim();
+        panel.add(crearBtn);
+        return panel;
+    }
 
-            if (habitacionIdStr.isEmpty() || dni.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "Por favor, completá los campos obligatorios (Habitación y DNI).",
-                        "Campos incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+    /* =========================
+     *        INIT / UI
+     * ========================= */
+    private void initCoreFields() {
+        habitacionIdField = new JTextField();
+        habitacionIdField.setEditable(false);
 
-            // Получаем и валидируем даты
-            LocalDate desde = toLocalDate((Date) desdeSpinner.getValue());
-            LocalDate hasta = toLocalDate((Date) hastaSpinner.getValue());
+        dniField = new JTextField();
+        nombreField = new JTextField();
+        apellidoField = new JTextField();
 
-            if (!hasta.isAfter(desde)) {
-                JOptionPane.showMessageDialog(this,
-                        "La fecha 'Hasta' debe ser posterior a 'Desde'.",
-                        "Rango de fechas inválido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+        // Date spinners
+        Date hoy = new Date();
+        desdeSpinner = createDateSpinner(hoy);
+        hastaSpinner = createDateSpinner(hoy);
 
-            int habitacionId = Integer.parseInt(habitacionIdStr);
+        // Pago
+        metodoCombo = new JComboBox<>(new String[]{"TRANSFERENCIA", "TARJETA DE CREDITO"});
+        metodoCombo.setSelectedItem("TRANSFERENCIA");
+        cantPagosSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 36, 1));
+        cantPagosSpinner.setEnabled(false); // transferencia => 1 pago
+    }
 
-            // тут можно вызвать sistema.agregarReserva(habitacionId, idHuespede, factura, desde, hasta);
-            // когда появятся id del huésped y la factura.
+    private JButton buildSelectHabitacionButton() {
+        JButton seleccionarBtn = new JButton("Seleccionar habitación…");
+        seleccionarBtn.addActionListener(e -> openSeleccionarHabitacionDialog());
+        return seleccionarBtn;
+    }
 
-            JOptionPane.showMessageDialog(this,
-                    "✅ Reserva creada con éxito:\n\n" +
-                            "Habitación (ID): " + habitacionId +
-                            "\nCliente: " + nombre + " " + apellido +
-                            "\nDNI/Pasaporte: " + dni +
-                            "\nDesde: " + desde +
-                            "\nHasta: " + hasta,
-                    "Reserva registrada", JOptionPane.INFORMATION_MESSAGE);
-
-            // очистка
-            habitacionIdField.setText("");
-            dniField.setText("");
-            nombreField.setText("");
-            apellidoField.setText("");
-            desdeSpinner.setValue(new Date());
-            hastaSpinner.setValue(new Date());
+    private void setupPaymentControls() {
+        metodoCombo.addActionListener(e -> {
+            String m = (String) metodoCombo.getSelectedItem();
+            boolean tarjeta = "TARJETA DE CREDITO".equals(m);
+            cantPagosSpinner.setEnabled(tarjeta);
+            if (!tarjeta) cantPagosSpinner.setValue(1);
         });
+    }
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(fondo);
-        buttonPanel.add(crearBtn);
+    /* =========================
+     *        ACTIONS
+     * ========================= */
+    private void openSeleccionarHabitacionDialog() {
+        SeleccionarHabitacionDialog dlg = new SeleccionarHabitacionDialog(this, sistema);
+        dlg.setVisible(true);
+        Integer id = dlg.getSelectedHabitacionId();
+        if (id != null) habitacionIdField.setText(String.valueOf(id));
+    }
 
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        add(mainPanel);
+    private void onCreateReserva() {
+        if (!validateRequired()) return;
+
+        LocalDate desde = toLocalDate((Date) desdeSpinner.getValue());
+        LocalDate hasta = toLocalDate((Date) hastaSpinner.getValue());
+
+        if (!validateDateRange(desde, hasta)) return;
+
+        int habitacionId = Integer.parseInt(habitacionIdField.getText().trim());
+        String dni      = dniField.getText().trim();
+        String nombre   = nombreField.getText().trim();
+        String apellido = apellidoField.getText().trim();
+        String metodo   = (String) metodoCombo.getSelectedItem();
+        int cantPagos   = (Integer) cantPagosSpinner.getValue();
+
+        try {
+            Habitacion habitacion = sistema.getHabitacionById(habitacionId);
+            long noches = ChronoUnit.DAYS.between(desde, hasta); // Hasta es exclusiva (clásico en hotelería)
+            double total = habitacion.getPrecio() * Math.max(noches, 1); // safety net на 1 ночь
+
+            Factura factura = new Factura(
+                    total,
+                    Factura.tipoDePago.TOTAL,
+                    metodoDePagoStrToEnum(metodo),
+                    cantPagos,
+                    LocalDate.now().plusWeeks(1)
+            );
+
+            sistema.agregarReserva(habitacionId, dni, factura, desde, hasta);
+
+            showInfo("✅ Reserva creada con éxito:\n\n" +
+                    "Habitación (ID): " + habitacionId +
+                    "\nCliente: " + nombre + " " + apellido +
+                    "\nDNI/Pasaporte: " + dni +
+                    "\nDesde: " + desde +
+                    "\nHasta: " + hasta +
+                    "\nMétodo de pago: " + metodo +
+                    "\nCant. pagos: " + cantPagos);
+
+            // éxito → закрываем форму
+            dispose();
+
+        } catch (Exception ex) {
+            showError("Ocurrió un error al crear la reserva:\n" + ex.getMessage());
+        }
+    }
+
+    /* =========================
+     *       VALIDATION
+     * ========================= */
+    private boolean validateRequired() {
+        String habitacionIdStr = habitacionIdField.getText().trim();
+        String dni = dniField.getText().trim();
+
+        if (habitacionIdStr.isEmpty() || dni.isEmpty()) {
+            showWarn("Por favor, completá los campos obligatorios (Habitación y DNI).");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validateDateRange(LocalDate desde, LocalDate hasta) {
+        if (!hasta.isAfter(desde)) {
+            showWarn("La fecha 'Hasta' debe ser posterior a 'Desde'.");
+            return false;
+        }
+        return true;
+    }
+
+    /* =========================
+     *       HELPERS
+     * ========================= */
+    private static GridBagConstraints baseGbc() {
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(6, 6, 6, 6);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0;
+        return c;
+    }
+
+    private void addL(JPanel p, String text, GridBagConstraints c, int x, int y) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        c.gridx = x; c.gridy = y; c.gridwidth = 1; c.weightx = 0;
+        p.add(lbl, c);
+    }
+
+    private void addF(JPanel p, JComponent comp, GridBagConstraints c, int x, int y) {
+        addF(p, comp, c, x, y, 1);
+    }
+
+    private void addF(JPanel p, JComponent comp, GridBagConstraints c, int x, int y, double weightx) {
+        c.gridx = x; c.gridy = y; c.gridwidth = 1; c.weightx = weightx;
+        p.add(comp, c);
+    }
+
+    private void addFSpan2(JPanel p, JComponent comp, GridBagConstraints c, int x, int y) {
+        c.gridx = x; c.gridy = y; c.gridwidth = 2; c.weightx = 1;
+        p.add(comp, c);
+        c.gridwidth = 1;
+    }
+
+    private static JSpinner createDateSpinner(Date base) {
+        SpinnerDateModel model = new SpinnerDateModel(base, null, null, Calendar.DAY_OF_MONTH);
+        JSpinner spinner = new JSpinner(model);
+        spinner.setEditor(new JSpinner.DateEditor(spinner, "yyyy-MM-dd"));
+        return spinner;
     }
 
     private static LocalDate toLocalDate(Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
+    private static Factura.metodoDePago metodoDePagoStrToEnum(String metodo) {
+        if ("TRANSFERENCIA".equals(metodo)) return Factura.metodoDePago.TRANSFERENCIA;
+        if ("TARJETA DE CREDITO".equals(metodo)) return Factura.metodoDePago.TARJETA_DE_CREDITO;
+        return Factura.metodoDePago.TRANSFERENCIA;
+    }
+
+    private void showWarn(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Aviso", JOptionPane.WARNING_MESSAGE);
+    }
+
+    private void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showInfo(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Reserva registrada", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /* =========================
+     *         MAIN
+     * ========================= */
     public static void main(String[] args) {
         Sistema sistema = new Sistema("", "", "", "", "", "");
         SwingUtilities.invokeLater(() -> new NuevaReservaForm(sistema).setVisible(true));
