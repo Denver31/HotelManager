@@ -21,7 +21,7 @@ public class Main {
     }
     public static void test_reservas_storage() {
         ReservaStorage storage = new ReservaStorage("hotel.db");
-        Reserva r1 = new Reserva(1,1,1,LocalDate.now(),LocalDate.now());
+        Reserva r1 = new Reserva(1,"111111111",1,LocalDate.now(),LocalDate.now());
 
         storage.save(r1);
         Map<Integer, Reserva> reservas = storage.getAll();
@@ -32,7 +32,7 @@ public class Main {
         }
         r1 = reservas.get(1);
         if (r1 != null) {
-            System.out.println("id 1: " + r1.getIdHuespede());
+            System.out.println("id 1: " + r1.getDNIHuespede());
         }
     }
 
@@ -41,7 +41,7 @@ public class Main {
         Factura f1 = new Factura(
                 12.23,
                 Factura.tipoDePago.TOTAL,
-                Factura.metodoDePago.TARJETA,
+                Factura.metodoDePago.TARJETA_DE_CREDITO,
                 1,
                 LocalDate.now()
         );

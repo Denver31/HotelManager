@@ -23,25 +23,25 @@ public class ReservaStorage extends BaseStorage {
                 CREATE TABLE IF NOT EXISTS reservas (
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     idHabitacion INTEGER NOT NULL,
-                                    idHuespede INTEGER NOT NULL,
+                                    dniHuespede TEXT NOT NULL,
                                     idFactura INTEGER NOT NULL,
                                     desde TEXT NOT NULL,
                                     hasta TEXT NOT NULL,
                                     FOREIGN KEY (idHabitacion) REFERENCES habitaciones(id) ON DELETE CASCADE,
-                                    FOREIGN KEY (idHuespede) REFERENCES huespedes(id) ON DELETE CASCADE,
+                                    FOREIGN KEY (dniHuespede) REFERENCES huespedes(dni) ON DELETE CASCADE,
                                     FOREIGN KEY (idFactura) REFERENCES facturas(id) ON DELETE CASCADE
                                 );
                 \s""";
     }
 
     public int save(Reserva r) {
-        String sql = "INSERT INTO reservas (idHabitacion, idHuespede, idFactura, desde, hasta) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO reservas (idHabitacion, dniHuespede, idFactura, desde, hasta) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, r.getIdHabitacion());
-            pstmt.setInt(2, r.getIdHuespede());
+            pstmt.setString(2, r.getDNIHuespede());
             pstmt.setInt(3, r.getIdFactura());
             pstmt.setString(4, r.getDesde().toString());
             pstmt.setString(5, r.getHasta().toString());
@@ -75,7 +75,7 @@ public class ReservaStorage extends BaseStorage {
 
                 Reserva r = new Reserva(
                         rs.getInt("idHabitacion"),
-                        rs.getInt("idHuespede"),
+                        rs.getString("dniHuespede"),
                         rs.getInt("idFactura"),
                         LocalDate.parse(rs.getString("desde")),
                         LocalDate.parse(rs.getString("hasta")));
