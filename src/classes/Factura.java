@@ -11,7 +11,7 @@ public class Factura {
 
     public enum metodoDePago {
         TRANSFERENCIA,
-        TARJETA
+        TARJETA_DE_CREDITO,
     }
 
     final double precision = 0.001;
@@ -33,9 +33,11 @@ public class Factura {
             case TRANSFERENCIA:
                 this.cantPagos = 1;
                 this.total = total * 0.95;
-            case TARJETA:
+                break;
+            case TARJETA_DE_CREDITO:
                 this.cantPagos = cantPagos;
                 this.total = total;
+                break;
         }
     }
 
