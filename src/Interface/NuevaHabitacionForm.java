@@ -10,170 +10,223 @@ import java.awt.event.ItemEvent;
 
 public class NuevaHabitacionForm extends JFrame {
 
+    // ---- стиль
+    private static final Color BG = new Color(245, 247, 250);
+    private static final Color ACCENT = new Color(0, 120, 215);
+    private static final Font  TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
+    private static final Font  LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+    private static final Font  FIELD_FONT = new Font("Segoe UI", Font.PLAIN, 13);
+
+    // ---- данные
+    private final Sistema sistema;
+
+    // ---- UI refs
     private JTextField nombreField;
-    private JTextArea descripcionArea;
+    private JTextArea  descripcionArea;
     private JTextField precioField;
     private JComboBox<Habitacion.tipoHabitacion> tipoCombo;
     private JLabel capacidadValue;
 
     public NuevaHabitacionForm(Sistema sistema) {
+        this.sistema = sistema;
+        setupFrame();
+        add(buildMainPanel());
+    }
+
+    /* =========================
+     *        FRAME / UI
+     * ========================= */
+    private void setupFrame() {
         setTitle("Nueva Habitación");
         setSize(520, 420);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
 
-        Color fondo = new Color(245, 247, 250);
-        Color acento = new Color(0, 120, 215);
+    private JPanel buildMainPanel() {
+        JPanel main = new JPanel(new BorderLayout(12, 12));
+        main.setBackground(BG);
+        main.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        JPanel mainPanel = new JPanel(new BorderLayout(12, 12));
-        mainPanel.setBackground(fondo);
-        mainPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        main.add(buildHeader(), BorderLayout.NORTH);
+        main.add(buildFormPanel(), BorderLayout.CENTER);
+        main.add(buildButtonsPanel(), BorderLayout.SOUTH);
 
-        JLabel titulo = new JLabel("🛏️ Agregar nueva habitación");
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        titulo.setForeground(acento);
-        titulo.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titulo, BorderLayout.NORTH);
+        return main;
+    }
 
-        // --------- FORM ----------
+    private JComponent buildHeader() {
+        JLabel titulo = new JLabel("🛏️ Agregar nueva habitación", SwingConstants.CENTER);
+        titulo.setFont(TITLE_FONT);
+        titulo.setForeground(ACCENT);
+        return titulo;
+    }
+
+    private JPanel buildFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(fondo);
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 6, 6, 6);
+        form.setBackground(BG);
+        GridBagConstraints c = baseGbc();
+
+        initFields();
+        attachListeners();
+
+        addL(form, "Nombre:", c, 0, 0);
+        addF(form, nombreField, c, 1, 0);
+
+        addL(form, "Descripción:", c, 0, 1);
+        c.fill = GridBagConstraints.BOTH;
+        addF(form, new JScrollPane(descripcionArea), c, 1, 1);
         c.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel nombreLabel = new JLabel("Nombre:");
-        JLabel descripcionLabel = new JLabel("Descripción:");
-        JLabel precioLabel = new JLabel("Precio ($):");
-        JLabel tipoLabel = new JLabel("Tipo:");
-        JLabel capacidadLabel = new JLabel("Capacidad:");
+        addL(form, "Precio ($):", c, 0, 2);
+        addF(form, precioField, c, 1, 2);
 
-        Font lf = new Font("Segoe UI", Font.PLAIN, 14);
-        nombreLabel.setFont(lf);
-        descripcionLabel.setFont(lf);
-        precioLabel.setFont(lf);
-        tipoLabel.setFont(lf);
-        capacidadLabel.setFont(lf);
+        addL(form, "Tipo:", c, 0, 3);
+        addF(form, tipoCombo, c, 1, 3);
 
-        nombreField = new JTextField();
-        nombreField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        addL(form, "Capacidad:", c, 0, 4);
+        addF(form, capacidadValue, c, 1, 4);
+
+        return form;
+    }
+
+    private JPanel buildButtonsPanel() {
+        JPanel south = new JPanel();
+        south.setBackground(BG);
+
+        JButton addBtn = primaryButton("Agregar habitación");
+        addBtn.addActionListener(e -> onAddHabitacion());
+
+        south.add(addBtn);
+        return south;
+    }
+
+    /* =========================
+     *        INIT / LISTENERS
+     * ========================= */
+    private void initFields() {
+        nombreField = new JTextField(); nombreField.setFont(FIELD_FONT);
 
         descripcionArea = new JTextArea(4, 20);
         descripcionArea.setLineWrap(true);
         descripcionArea.setWrapStyleWord(true);
-        descripcionArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        JScrollPane descripcionScroll = new JScrollPane(descripcionArea);
+        descripcionArea.setFont(FIELD_FONT);
 
-        precioField = new JTextField();
-        precioField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        precioField = new JTextField(); precioField.setFont(FIELD_FONT);
 
         tipoCombo = new JComboBox<>(Habitacion.tipoHabitacion.values());
-        tipoCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tipoCombo.setFont(FIELD_FONT);
 
-        capacidadValue = new JLabel("-");
+        capacidadValue = new JLabel("-", SwingConstants.LEFT);
         capacidadValue.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // динамически показываем вместимость по выбранному типу
+        // начальные значения
+        tipoCombo.setSelectedIndex(0);
+        capacidadValue.setText(String.valueOf(capacidadPorTipo((Habitacion.tipoHabitacion) tipoCombo.getSelectedItem())));
+    }
+
+    private void attachListeners() {
         tipoCombo.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 Habitacion.tipoHabitacion t = (Habitacion.tipoHabitacion) e.getItem();
                 capacidadValue.setText(String.valueOf(capacidadPorTipo(t)));
             }
         });
-        // выставим начальное значение
-        tipoCombo.setSelectedIndex(0);
-        capacidadValue.setText(String.valueOf(capacidadPorTipo((Habitacion.tipoHabitacion) tipoCombo.getSelectedItem())));
-
-        // раскладка
-        c.gridx = 0; c.gridy = 0; c.weightx = 0;
-        form.add(nombreLabel, c);
-        c.gridx = 1; c.gridy = 0; c.weightx = 1;
-        form.add(nombreField, c);
-
-        c.gridx = 0; c.gridy = 1; c.weightx = 0;
-        form.add(descripcionLabel, c);
-        c.gridx = 1; c.gridy = 1; c.weightx = 1;
-        c.fill = GridBagConstraints.BOTH;
-        form.add(descripcionScroll, c);
-        c.fill = GridBagConstraints.HORIZONTAL;
-
-        c.gridx = 0; c.gridy = 2; c.weightx = 0;
-        form.add(precioLabel, c);
-        c.gridx = 1; c.gridy = 2; c.weightx = 1;
-        form.add(precioField, c);
-
-        c.gridx = 0; c.gridy = 3; c.weightx = 0;
-        form.add(tipoLabel, c);
-        c.gridx = 1; c.gridy = 3; c.weightx = 1;
-        form.add(tipoCombo, c);
-
-        c.gridx = 0; c.gridy = 4; c.weightx = 0;
-        form.add(capacidadLabel, c);
-        c.gridx = 1; c.gridy = 4; c.weightx = 1;
-        form.add(capacidadValue, c);
-
-        mainPanel.add(form, BorderLayout.CENTER);
-
-        // --------- BUTTONS ----------
-        JButton agregarBtn = new JButton("Agregar habitación");
-        agregarBtn.setBackground(acento);
-        agregarBtn.setForeground(Color.WHITE);
-        agregarBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        agregarBtn.setFocusPainted(false);
-        agregarBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-
-        agregarBtn.addActionListener(e -> {
-            String nombre = nombreField.getText().trim();
-            String descripcion = descripcionArea.getText().trim();
-            String precioStr = precioField.getText().trim();
-            Habitacion.tipoHabitacion tipo = (Habitacion.tipoHabitacion) tipoCombo.getSelectedItem();
-
-            if (nombre.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingresá el nombre de la habitación.",
-                        "Falta nombre", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            float precio;
-            try {
-                precio = Float.parseFloat(precioStr);
-                if (precio <= 0) throw new NumberFormatException();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Precio inválido. Debe ser un número mayor a 0.",
-                        "Precio inválido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            try {
-                Habitacion habitacion = new Habitacion(nombre, descripcion, precio, tipo);
-                sistema.agregarHabitacion(habitacion);
-
-                JOptionPane.showMessageDialog(this,
-                        "✅ Habitación agregada:\n" +
-                                "• Nombre: " + nombre + "\n" +
-                                "• Tipo: " + tipo + "\n" +
-                                "• Capacidad: " + capacidadPorTipo(tipo) + "\n" +
-                                "• Precio: $" + precio,
-                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-                // 🔚 Закрываем форму после отправки данных
-                dispose();
-
-            } catch (Throwable ex) {
-                JOptionPane.showMessageDialog(this,
-                        "No se pudo crear la habitación:\n" + ex.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        JPanel south = new JPanel();
-        south.setBackground(fondo);
-        south.add(agregarBtn);
-        mainPanel.add(south, BorderLayout.SOUTH);
-
-        add(mainPanel);
     }
 
-    // локальная логика для подсказки по вместимости (соответствует вашей модели)
+    /* =========================
+     *         ACTIONS
+     * ========================= */
+    private void onAddHabitacion() {
+        String nombre = nombreField.getText().trim();
+        String descripcion = descripcionArea.getText().trim();
+        String precioStr = precioField.getText().trim();
+        Habitacion.tipoHabitacion tipo = (Habitacion.tipoHabitacion) tipoCombo.getSelectedItem();
+
+        if (!validateNombre(nombre)) return;
+
+        Float precio = parsePrecio(precioStr);
+        if (precio == null) return;
+
+        try {
+            Habitacion h = new Habitacion(nombre, descripcion, precio, tipo);
+            sistema.agregarHabitacion(h);
+
+            showInfo("✅ Habitación agregada:\n" +
+                    "• Nombre: " + nombre + "\n" +
+                    "• Tipo: " + tipo + "\n" +
+                    "• Capacidad: " + capacidadPorTipo(tipo) + "\n" +
+                    "• Precio: $" + precio);
+
+            dispose(); // закрываем после успеха
+
+        } catch (Throwable ex) {
+            showError("No se pudo crear la habitación:\n" + ex.getMessage());
+        }
+    }
+
+    /* =========================
+     *       VALIDATION
+     * ========================= */
+    private boolean validateNombre(String nombre) {
+        if (nombre.isEmpty()) {
+            showWarn("Ingresá el nombre de la habitación.");
+            return false;
+        }
+        return true;
+    }
+
+    private Float parsePrecio(String precioStr) {
+        try {
+            float p = Float.parseFloat(precioStr);
+            if (p <= 0) throw new NumberFormatException();
+            return p;
+        } catch (NumberFormatException ex) {
+            showWarn("Precio inválido. Debe ser un número mayor a 0.");
+            return null;
+        }
+    }
+
+    /* =========================
+     *         HELPERS
+     * ========================= */
+    private static GridBagConstraints baseGbc() {
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(6, 6, 6, 6);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        return c;
+    }
+
+    private void addL(JPanel p, String text, GridBagConstraints c, int x, int y) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(LABEL_FONT);
+        GridBagConstraints g = (GridBagConstraints) c.clone();
+        g.gridx = x; g.gridy = y; g.weightx = 0; g.gridwidth = 1;
+        p.add(lbl, g);
+    }
+
+    private void addF(JPanel p, JComponent comp, GridBagConstraints c, int x, int y) {
+        GridBagConstraints g = (GridBagConstraints) c.clone();
+        g.gridx = x; g.gridy = y; g.weightx = 1; g.gridwidth = 1;
+        p.add(comp, g);
+    }
+
+    private JButton primaryButton(String text) {
+        JButton b = new JButton(text);
+        b.setBackground(ACCENT);
+        b.setForeground(Color.WHITE);
+        b.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        b.setFocusPainted(false);
+        b.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        return b;
+    }
+
+    private void showWarn(String msg)  { JOptionPane.showMessageDialog(this, msg, "Aviso", JOptionPane.WARNING_MESSAGE); }
+    private void showError(String msg) { JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE); }
+    private void showInfo(String msg)  { JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE); }
+
+    // локальная логика вместимости — подгоняй под свою модель
     private int capacidadPorTipo(Habitacion.tipoHabitacion tipo) {
         switch (tipo) {
             case INDIVIDUAL:   return 2;
@@ -183,7 +236,9 @@ public class NuevaHabitacionForm extends JFrame {
         }
     }
 
-    // Тестовый запуск
+    /* =========================
+     *          MAIN
+     * ========================= */
     public static void main(String[] args) {
         Sistema sistema = new Sistema("", "", "", "", "", "");
         SwingUtilities.invokeLater(() -> new NuevaHabitacionForm(sistema).setVisible(true));
