@@ -3,9 +3,11 @@ package src;
 import src.classes.Factura;
 import src.classes.Habitacion;
 import src.classes.Huespede;
+import src.classes.Reserva;
 import src.storage.FacturaStorage;
 import src.storage.HabitacionStorage;
 import src.storage.HuespedeStorage;
+import src.storage.ReservaStorage;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -14,7 +16,24 @@ public class Main {
     public static void main(String[] args) {
 //        test_habitaciones_storage();
 //        test_huespedes_storage();
-        test_facturas_storage();
+//        test_facturas_storage();
+        test_reservas_storage();
+    }
+    public static void test_reservas_storage() {
+        ReservaStorage storage = new ReservaStorage("hotel.db");
+        Reserva r1 = new Reserva(1,1,1,LocalDate.now(),LocalDate.now());
+
+        storage.save(r1);
+        Map<Integer, Reserva> reservas = storage.getAll();
+
+        for (Integer id : reservas.keySet()) {
+            Reserva r = reservas.get(id);
+            System.out.println(id + " | " + r.getIdFactura() + r.getIdHabitacion());
+        }
+        r1 = reservas.get(1);
+        if (r1 != null) {
+            System.out.println("id 1: " + r1.getIdHuespede());
+        }
     }
 
     public static void test_facturas_storage() {
