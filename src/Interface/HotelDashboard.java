@@ -155,13 +155,10 @@ public class HotelDashboard extends JFrame {
     }
 
     private void refreshSalidas() {
-        // TODO: cargar desde sistema.getProximasSalidas()
-        String[] salidas = {
-                "12/11 - Hab. 102 - Ana Ruiz",
-                "13/11 - Hab. 305 - Carlos Díaz"
-        };
-        salidasModel.clear();
-        for (String s : salidas) salidasModel.addElement("• " + s);
+        ArrayList<Sistema.Movimiento> salidas = sistema.getSalidas();
+
+        entradasModel.clear();
+        for (Sistema.Movimiento m : salidas) entradasModel.addElement("• " + m.getHuespede() + "-" + m.getFecha());
     }
 
     private void refreshFacturasVencidas() {
