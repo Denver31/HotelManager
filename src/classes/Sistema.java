@@ -1,12 +1,14 @@
 package src.classes;
 
 import src.storage.HabitacionStorage;
+import src.storage.HuespedeStorage;
 
 import java.time.LocalDate;
 import java.util.*;
 
 public class Sistema {
     private HabitacionStorage habitacionStorage;
+    private HuespedeStorage huespedeStorage;
     private Map<Integer, Reserva> reservas = new HashMap<>();
     private Map<Integer, Habitacion> habitaciones = new HashMap<>();
     private Map<String, Huespede> huespedes = new HashMap<>();
@@ -16,12 +18,12 @@ public class Sistema {
     private int maxIdFactura;
     private int maxIdReserva;
 
-    public Sistema(String habitacionesStorageAddress, String huespedeFile, String facturaFile,
-                   String idHabitacionesFile, String idHuespedeFile, String idFacturaFile) {
-        this.habitacionStorage = new HabitacionStorage("hotel.db");
+    public Sistema(String habitacioneStorageAddress, String huespedeStorageAddress, String facturaStorageAddress, String reservaStorageAddress) {
+        this.habitacionStorage = new HabitacionStorage(habitacioneStorageAddress);
+        this.huespedeStorage = new HuespedeStorage(huespedeStorageAddress);
         reservas = new HashMap<>();
         habitaciones = habitacionStorage.getAll();
-        huespedes = new HashMap<>();
+        huespedes = huespedeStorage.getAll();
         facturas = new HashMap<>();
         maxIdHabitacion = 0;
         maxIdHuespede = 0;
@@ -30,13 +32,15 @@ public class Sistema {
     }
 
     public void agregarHabitacion(Habitacion habitacion) {
-        maxIdHabitacion++;
-        habitaciones.put(maxIdHabitacion, habitacion);
-        habitacionStorage.save(habitacion);
+        Integer id = habitacionStorage.save(habitacion);
+        habitaciones.put(id, habitacion);
     }
 
     public void agregarHuespede(Huespede huespede) {
-        huespedes.put(huespede.getDNI(), huespede);
+        if (!huespedes.containsKey(huespede.getDNI())) {
+            huespedeStorage.save(huespede);
+            huespedes.put(huespede.getDNI(), huespede);
+        }
     }
 
     private void agregarFactura(Factura factura) {
@@ -72,5 +76,59 @@ public class Sistema {
 
     public Map<Integer, Factura> getFacturas() {
         return Collections.unmodifiableMap(facturas);
+    }
+
+    public class Movimiento {
+        String huespede;
+        LocalDate fecha;
+
+        Movimiento(String huespede, LocalDate fecha) {
+            this.huespede = huespede;
+            this.fecha = fecha;
+        }
+
+        public String getHuespede() {
+            return huespede;
+        }
+
+        public LocalDate getFecha() {
+            return fecha;
+        }
+    }
+
+    public ArrayList<Movimiento> getEntradas() {
+        ArrayList<Movimiento> entradas = new ArrayList<>();
+        LocalDate hoy = LocalDate.now();
+        LocalDate limite = hoy.plusDays(2);
+
+        for (Reserva reserva : reservas.values()) {
+            LocalDate fecha = reserva.getDesde();
+            if (!fecha.isBefore(hoy) && !fecha.isAfter(limite)) {
+                String nombre = huespedes.get(reserva.getDNIHuespede()).getNombre();
+                Movimiento entrada = new Movimiento(nombre, fecha);
+                entradas.add(entrada);
+            }
+        }
+
+        entradas.sort(Comparator.comparing(e -> e.fecha));
+        return entradas;
+    }
+
+    public ArrayList<Movimiento> getSalidas() {
+        ArrayList<Movimiento> salidas = new ArrayList<>();
+        LocalDate hoy = LocalDate.now();
+        LocalDate limite = hoy.plusDays(2);
+
+        for (Reserva reserva : reservas.values()) {
+            LocalDate fecha = reserva.getHasta();
+            if (!fecha.isBefore(hoy) && !fecha.isAfter(limite)) {
+                String nombre = huespedes.get(reserva.getDNIHuespede()).getNombre();
+                Movimiento salida = new Movimiento(nombre, fecha);
+                salidas.add(salida);
+            }
+        }
+
+        salidas.sort(Comparator.comparing(e -> e.fecha));
+        return salidas;
     }
 }

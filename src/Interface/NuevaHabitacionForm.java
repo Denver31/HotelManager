@@ -240,7 +240,7 @@ public class NuevaHabitacionForm extends JFrame {
      *          MAIN
      * ========================= */
     public static void main(String[] args) {
-        Sistema sistema = new Sistema("", "", "", "", "", "");
+        Sistema sistema = new Sistema("hotel.db", "hotel.db", "hotel.db", "hotel.db");
         SwingUtilities.invokeLater(() -> new NuevaHabitacionForm(sistema).setVisible(true));
     }
 }
