@@ -10,11 +10,11 @@ public class Habitacion {
 
     private String nombre;
     private String descripcion;
-    private float precio;
+    private double precio;
     private int capacidad;
 
 
-    public Habitacion(String nombre, String descripcion, float precio, tipoHabitacion tipo) throws Throwable{
+    public Habitacion(String nombre, String descripcion, double precio, tipoHabitacion tipo){
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precio = precio;
@@ -48,7 +48,7 @@ public class Habitacion {
         this.descripcion = descripcion;
     }
 
-    public float getPrecio() {
+    public double getPrecio() {
         return precio;
     }
 
