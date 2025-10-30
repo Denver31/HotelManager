@@ -29,7 +29,7 @@ public class HabitacionStorage extends BaseStorage {
                                \s""";
     }
 
-    public void save(Habitacion h) {
+    public Integer save(Habitacion h) {
         String sql = "INSERT INTO habitaciones (nombre, descripcion, precio, capacidad) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
@@ -41,11 +41,19 @@ public class HabitacionStorage extends BaseStorage {
             pstmt.setInt(4, h.getCapacidad());
 
             pstmt.executeUpdate();
-            System.out.println("💾 Комната успешно сохранена в БД!");
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int id = generatedKeys.getInt(1);
+                    System.out.println("💾 Habitacion guardado id = " + id);
+                    return id;
+                }
+            }
 
         } catch (SQLException e) {
-            System.err.println("Ошибка при сохранении комнаты: " + e.getMessage());
+            System.err.println("error: " + e.getMessage());
         }
+        return -1;
+
     }
     public Map<Integer, Habitacion> getAll() {
         Map<Integer, Habitacion> habitacionesMap = new HashMap<>();
@@ -81,7 +89,7 @@ public class HabitacionStorage extends BaseStorage {
             }
 
         } catch (SQLException e) {
-            System.err.println("Ошибка при получении данных: " + e.getMessage());
+            System.err.println("error: " + e.getMessage());
         }
 
         return habitacionesMap;

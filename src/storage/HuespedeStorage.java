@@ -26,21 +26,24 @@ public class HuespedeStorage extends BaseStorage {
                                \s""";
     }
 
-    public void save(Huespede h) {
+    public String save(Huespede h) {
         String sql = "INSERT INTO huespedes (nombre, dni) VALUES (?, ?)";
+        String dni = h.getDNI();
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, h.getNombre());
-            pstmt.setString(2, h.getDNI());
+            pstmt.setString(2, dni);
 
             pstmt.executeUpdate();
             System.out.println("💾 Huespede guardado");
-
+            return dni;
         } catch (SQLException e) {
             System.err.println("error" + e.getMessage());
+            return "";
         }
     }
+
     public Map<String, Huespede> getAll() {
         Map<String, Huespede> huespedesMap = new HashMap<>();
         String sql = "SELECT * FROM huespedes";
