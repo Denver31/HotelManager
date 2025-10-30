@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 public class HotelDashboard extends JFrame {
@@ -147,23 +148,17 @@ public class HotelDashboard extends JFrame {
     }
 
     private void refreshEntradas() {
-        // TODO: cargar desde sistema.getProximasEntradas()
-        String[] entradas = {
-                "12/11 - Hab. 101 - Juan Pérez",
-                "12/11 - Hab. 204 - María López"
-        };
+        ArrayList<Sistema.Movimiento> entradas = sistema.getEntradas();
+
         entradasModel.clear();
-        for (String s : entradas) entradasModel.addElement("• " + s);
+        for (Sistema.Movimiento m : entradas) entradasModel.addElement("• " + m.getHuespede() + "-" + m.getFecha());
     }
 
     private void refreshSalidas() {
-        // TODO: cargar desde sistema.getProximasSalidas()
-        String[] salidas = {
-                "12/11 - Hab. 102 - Ana Ruiz",
-                "13/11 - Hab. 305 - Carlos Díaz"
-        };
-        salidasModel.clear();
-        for (String s : salidas) salidasModel.addElement("• " + s);
+        ArrayList<Sistema.Movimiento> salidas = sistema.getSalidas();
+
+        entradasModel.clear();
+        for (Sistema.Movimiento m : salidas) entradasModel.addElement("• " + m.getHuespede() + "-" + m.getFecha());
     }
 
     private void refreshFacturasVencidas() {
@@ -280,7 +275,7 @@ public class HotelDashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        Sistema sistema = new Sistema("", "", "", "", "", "");
+        Sistema sistema = new Sistema("hotel.db", "hotel.db", "hotel.db", "hotel.db");
         SwingUtilities.invokeLater(() -> new HotelDashboard(sistema).setVisible(true));
     }
 }
