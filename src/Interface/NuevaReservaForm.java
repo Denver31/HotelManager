@@ -1,20 +1,29 @@
 package src.Interface;
 
+import src.classes.Sistema;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
 
 public class NuevaReservaForm extends JFrame {
 
-    private JTextField habitacionField;
+    private JTextField habitacionIdField; // сюда кладём выбранный ID
     private JTextField dniField;
-    private JTextField montoField;
+    private JTextField nombreField;
+    private JTextField apellidoField;
 
-    public NuevaReservaForm() {
+    // новые поля дат
+    private JSpinner desdeSpinner;
+    private JSpinner hastaSpinner;
+
+    public NuevaReservaForm(Sistema sistema) {
         setTitle("Nueva Reserva");
-        setSize(420, 300);
+        setSize(560, 420);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -31,32 +40,84 @@ public class NuevaReservaForm extends JFrame {
         titulo.setHorizontalAlignment(SwingConstants.CENTER);
         mainPanel.add(titulo, BorderLayout.NORTH);
 
-        // Panel de formulario
-        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 15));
+        JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(fondo);
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(6, 6, 6, 6);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0;
 
-        JLabel habitacionLabel = new JLabel("ID de habitación:");
+        JLabel habitacionLabel = new JLabel("Habitación (ID):");
         JLabel dniLabel = new JLabel("DNI o Pasaporte del cliente:");
-        JLabel montoLabel = new JLabel("Monto a pagar ($):");
+        JLabel nombreLabel = new JLabel("Nombre del cliente:");
+        JLabel apellidoLabel = new JLabel("Apellido del cliente:");
+        JLabel desdeLabel = new JLabel("Desde (fecha):");
+        JLabel hastaLabel = new JLabel("Hasta (fecha):");
 
-        habitacionLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        dniLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        montoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        Font lf = new Font("Segoe UI", Font.PLAIN, 14);
+        habitacionLabel.setFont(lf);
+        dniLabel.setFont(lf);
+        nombreLabel.setFont(lf);
+        apellidoLabel.setFont(lf);
+        desdeLabel.setFont(lf);
+        hastaLabel.setFont(lf);
 
-        habitacionField = new JTextField();
+        habitacionIdField = new JTextField();
+        habitacionIdField.setEditable(false); // не редактируем вручную
+        JButton seleccionarBtn = new JButton("Seleccionar habitación…");
+        seleccionarBtn.addActionListener(e -> {
+            SeleccionarHabitacionDialog dlg = new SeleccionarHabitacionDialog(this, sistema);
+            dlg.setVisible(true);
+            Integer id = dlg.getSelectedHabitacionId();
+            if (id != null) {
+                habitacionIdField.setText(String.valueOf(id));
+            }
+        });
+
         dniField = new JTextField();
-        montoField = new JTextField();
+        nombreField = new JTextField();
+        apellidoField = new JTextField();
 
-        formPanel.add(habitacionLabel);
-        formPanel.add(habitacionField);
-        formPanel.add(dniLabel);
-        formPanel.add(dniField);
-        formPanel.add(montoLabel);
-        formPanel.add(montoField);
+        // --- Спиннеры дат (без внешних библиотек) ---
+        Date hoy = new Date();
+
+        SpinnerDateModel desdeModel = new SpinnerDateModel(hoy, null, null, Calendar.DAY_OF_MONTH);
+        desdeSpinner = new JSpinner(desdeModel);
+        JSpinner.DateEditor desdeEditor = new JSpinner.DateEditor(desdeSpinner, "yyyy-MM-dd");
+        desdeSpinner.setEditor(desdeEditor);
+
+        SpinnerDateModel hastaModel = new SpinnerDateModel(hoy, null, null, Calendar.DAY_OF_MONTH);
+        hastaSpinner = new JSpinner(hastaModel);
+        JSpinner.DateEditor hastaEditor = new JSpinner.DateEditor(hastaSpinner, "yyyy-MM-dd");
+        hastaSpinner.setEditor(hastaEditor);
+
+        // --- Размещение ---
+        c.gridx = 0; c.gridy = 0; formPanel.add(habitacionLabel, c);
+        c.gridx = 1; c.gridy = 0; c.weightx = 1; formPanel.add(habitacionIdField, c);
+        c.gridx = 2; c.gridy = 0; c.weightx = 0; formPanel.add(seleccionarBtn, c);
+
+        c.gridx = 0; c.gridy = 1; c.weightx = 0; formPanel.add(dniLabel, c);
+        c.gridx = 1; c.gridy = 1; c.gridwidth = 2; c.weightx = 1; formPanel.add(dniField, c);
+        c.gridwidth = 1;
+
+        c.gridx = 0; c.gridy = 2; c.weightx = 0; formPanel.add(nombreLabel, c);
+        c.gridx = 1; c.gridy = 2; c.gridwidth = 2; c.weightx = 1; formPanel.add(nombreField, c);
+        c.gridwidth = 1;
+
+        c.gridx = 0; c.gridy = 3; c.weightx = 0; formPanel.add(apellidoLabel, c);
+        c.gridx = 1; c.gridy = 3; c.gridwidth = 2; c.weightx = 1; formPanel.add(apellidoField, c);
+        c.gridwidth = 1;
+
+        c.gridx = 0; c.gridy = 4; c.weightx = 0; formPanel.add(desdeLabel, c);
+        c.gridx = 1; c.gridy = 4; c.gridwidth = 2; c.weightx = 1; formPanel.add(desdeSpinner, c);
+        c.gridwidth = 1;
+
+        c.gridx = 0; c.gridy = 5; c.weightx = 0; formPanel.add(hastaLabel, c);
+        c.gridx = 1; c.gridy = 5; c.gridwidth = 2; c.weightx = 1; formPanel.add(hastaSpinner, c);
+        c.gridwidth = 1;
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
-        // Botón
         JButton crearBtn = new JButton("Crear reserva");
         crearBtn.setBackground(acento);
         crearBtn.setForeground(Color.WHITE);
@@ -64,34 +125,51 @@ public class NuevaReservaForm extends JFrame {
         crearBtn.setFocusPainted(false);
         crearBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
 
-        crearBtn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String habitacion = habitacionField.getText().trim();
-                String dni = dniField.getText().trim();
-                String monto = montoField.getText().trim();
+        crearBtn.addActionListener(e -> {
+            String habitacionIdStr = habitacionIdField.getText().trim();
+            String dni = dniField.getText().trim();
+            String nombre = nombreField.getText().trim();
+            String apellido = apellidoField.getText().trim();
 
-                if (habitacion.isEmpty() || dni.isEmpty() || monto.isEmpty()) {
-                    JOptionPane.showMessageDialog(NuevaReservaForm.this,
-                            "Por favor, completá todos los campos.",
-                            "Campos incompletos",
-                            JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                JOptionPane.showMessageDialog(NuevaReservaForm.this,
-                        "✅ Reserva creada con éxito:\n\n" +
-                                "Habitación: " + habitacion +
-                                "\nCliente (DNI/Pasaporte): " + dni +
-                                "\nMonto a pagar: $" + monto,
-                        "Reserva registrada",
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                // Limpiar campos
-                habitacionField.setText("");
-                dniField.setText("");
-                montoField.setText("");
+            if (habitacionIdStr.isEmpty() || dni.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Por favor, completá los campos obligatorios (Habitación y DNI).",
+                        "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+
+            // Получаем и валидируем даты
+            LocalDate desde = toLocalDate((Date) desdeSpinner.getValue());
+            LocalDate hasta = toLocalDate((Date) hastaSpinner.getValue());
+
+            if (!hasta.isAfter(desde)) {
+                JOptionPane.showMessageDialog(this,
+                        "La fecha 'Hasta' debe ser posterior a 'Desde'.",
+                        "Rango de fechas inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int habitacionId = Integer.parseInt(habitacionIdStr);
+
+            // тут можно вызвать sistema.agregarReserva(habitacionId, idHuespede, factura, desde, hasta);
+            // когда появятся id del huésped y la factura.
+
+            JOptionPane.showMessageDialog(this,
+                    "✅ Reserva creada con éxito:\n\n" +
+                            "Habitación (ID): " + habitacionId +
+                            "\nCliente: " + nombre + " " + apellido +
+                            "\nDNI/Pasaporte: " + dni +
+                            "\nDesde: " + desde +
+                            "\nHasta: " + hasta,
+                    "Reserva registrada", JOptionPane.INFORMATION_MESSAGE);
+
+            // очистка
+            habitacionIdField.setText("");
+            dniField.setText("");
+            nombreField.setText("");
+            apellidoField.setText("");
+            desdeSpinner.setValue(new Date());
+            hastaSpinner.setValue(new Date());
         });
 
         JPanel buttonPanel = new JPanel();
@@ -99,11 +177,15 @@ public class NuevaReservaForm extends JFrame {
         buttonPanel.add(crearBtn);
 
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
         add(mainPanel);
     }
 
+    private static LocalDate toLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new NuevaReservaForm().setVisible(true));
+        Sistema sistema = new Sistema("", "", "", "", "", "");
+        SwingUtilities.invokeLater(() -> new NuevaReservaForm(sistema).setVisible(true));
     }
 }

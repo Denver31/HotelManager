@@ -1,12 +1,15 @@
 package src.Interface;
 
+import src.classes.Sistema;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 
 public class HotelDashboard extends JFrame {
 
-    public HotelDashboard() {
+
+    public HotelDashboard(Sistema sistema) {
         setTitle("Hotel Management System - Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 700);
@@ -56,7 +59,7 @@ public class HotelDashboard extends JFrame {
         // Accesos rápidos
         JPanel accesosPanel = createCard("Accesos rápidos", cardColor);
         accesosPanel.setLayout(new GridLayout(3, 1, 10, 10));
-        String[] botones = {"Nueva reserva", "Check-in", "Check-out"};
+        String[] botones = {"Nueva reserva", "Agregar Habitacion", "Check-in", "Check-out"};
         for (String b : botones) {
             JButton btn = new JButton(b);
             btn.setFocusPainted(false);
@@ -69,7 +72,11 @@ public class HotelDashboard extends JFrame {
                 switch (b) {
                     case "Nueva reserva":
                         // Abrir la ventana de nueva reserva
-                        SwingUtilities.invokeLater(() -> new NuevaReservaForm().setVisible(true));
+                        SwingUtilities.invokeLater(() -> new NuevaReservaForm(sistema).setVisible(true));
+                        break;
+                    case "Agregar Habitacion":
+                        // Abrir la ventana de nueva reserva
+                        SwingUtilities.invokeLater(() -> new NuevaHabitacionForm(sistema).setVisible(true));
                         break;
                     case "Check-in":
                         JOptionPane.showMessageDialog(this, "Funcionalidad de check-in próximamente.", "Info", JOptionPane.INFORMATION_MESSAGE);
@@ -140,6 +147,7 @@ public class HotelDashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new HotelDashboard().setVisible(true));
+        Sistema sistema = new Sistema("", "", "", "", "", "");
+            new HotelDashboard(sistema).setVisible(true);
     }
 }
