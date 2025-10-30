@@ -1,9 +1,12 @@
 package src.classes;
 
+import src.storage.HabitacionStorage;
+
 import java.time.LocalDate;
 import java.util.*;
 
 public class Sistema {
+    private HabitacionStorage habitacionStorage;
     private Map<Integer, Reserva> reservas = new HashMap<>();
     private Map<Integer, Habitacion> habitaciones = new HashMap<>();
     private Map<String, Huespede> huespedes = new HashMap<>();
@@ -13,10 +16,11 @@ public class Sistema {
     private int maxIdFactura;
     private int maxIdReserva;
 
-    public Sistema(String habitacionesFile, String huespedeFile, String facturaFile,
+    public Sistema(String habitacionesStorageAddress, String huespedeFile, String facturaFile,
                    String idHabitacionesFile, String idHuespedeFile, String idFacturaFile) {
+        this.habitacionStorage = new HabitacionStorage("hotel.db");
         reservas = new HashMap<>();
-        habitaciones = new HashMap<>();
+        habitaciones = habitacionStorage.getAll();
         huespedes = new HashMap<>();
         facturas = new HashMap<>();
         maxIdHabitacion = 0;
@@ -28,6 +32,7 @@ public class Sistema {
     public void agregarHabitacion(Habitacion habitacion) {
         maxIdHabitacion++;
         habitaciones.put(maxIdHabitacion, habitacion);
+        habitacionStorage.save(habitacion);
     }
 
     public void agregarHuespede(Huespede huespede) {
