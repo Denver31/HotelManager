@@ -41,7 +41,7 @@ public class Main {
         Factura f1 = new Factura(
                 12.23,
                 Factura.tipoDePago.TOTAL,
-                Factura.metodoDePago.TARJETA_DE_CREDITO,
+                Factura.metodoDePago.TARJETA,
                 1,
                 LocalDate.now()
         );

@@ -291,7 +291,7 @@ public class NuevaReservaForm extends JFrame {
 
     private static Factura.metodoDePago metodoDePagoStrToEnum(String metodo) {
         if ("TRANSFERENCIA".equals(metodo)) return Factura.metodoDePago.TRANSFERENCIA;
-        if ("TARJETA DE CREDITO".equals(metodo)) return Factura.metodoDePago.TARJETA_DE_CREDITO;
+        if ("TARJETA DE CREDITO".equals(metodo)) return Factura.metodoDePago.TARJETA;
         return Factura.metodoDePago.TRANSFERENCIA;
     }
 

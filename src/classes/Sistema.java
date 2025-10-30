@@ -1,7 +1,9 @@
 package src.classes;
 
+import src.storage.FacturaStorage;
 import src.storage.HabitacionStorage;
 import src.storage.HuespedeStorage;
+import src.storage.ReservaStorage;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -9,26 +11,22 @@ import java.util.*;
 public class Sistema {
     private HabitacionStorage habitacionStorage;
     private HuespedeStorage huespedeStorage;
+    private FacturaStorage facturaStorage;
+    private ReservaStorage reservaStorage;
     private Map<Integer, Reserva> reservas = new HashMap<>();
     private Map<Integer, Habitacion> habitaciones = new HashMap<>();
     private Map<String, Huespede> huespedes = new HashMap<>();
     private Map<Integer, Factura> facturas = new HashMap<>();
-    private int maxIdHabitacion;
-    private int maxIdHuespede;
-    private int maxIdFactura;
-    private int maxIdReserva;
 
     public Sistema(String habitacioneStorageAddress, String huespedeStorageAddress, String facturaStorageAddress, String reservaStorageAddress) {
         this.habitacionStorage = new HabitacionStorage(habitacioneStorageAddress);
         this.huespedeStorage = new HuespedeStorage(huespedeStorageAddress);
-        reservas = new HashMap<>();
+        this.facturaStorage = new FacturaStorage(facturaStorageAddress);
+        this.reservaStorage = new ReservaStorage(reservaStorageAddress);
         habitaciones = habitacionStorage.getAll();
         huespedes = huespedeStorage.getAll();
-        facturas = new HashMap<>();
-        maxIdHabitacion = 0;
-        maxIdHuespede = 0;
-        maxIdFactura = 0;
-        maxIdReserva = 0;
+        facturas = facturaStorage.getAll();
+        reservas = reservaStorage.getAll();
     }
 
     public void agregarHabitacion(Habitacion habitacion) {
@@ -43,9 +41,10 @@ public class Sistema {
         }
     }
 
-    private void agregarFactura(Factura factura) {
-        maxIdFactura++;
-        facturas.put(maxIdFactura, factura);
+    private Integer agregarFactura(Factura factura) {
+        Integer id = facturaStorage.save(factura);
+        facturas.put(id, factura);
+        return id;
     }
 
     private void borrarFactura(int idFactura) {
@@ -54,10 +53,10 @@ public class Sistema {
 
     public void agregarReserva(int idHabitacion, String dniHuespede, Factura factura,
                                java.time.LocalDate desde, java.time.LocalDate hasta) {
-        maxIdReserva++;
-        agregarFactura(factura);
-        Reserva reserva = new Reserva(idHabitacion, dniHuespede, maxIdFactura, desde, hasta);
-        reservas.put(maxIdReserva, reserva);
+        Integer facturaId = agregarFactura(factura);
+        Reserva reserva = new Reserva(idHabitacion, dniHuespede, facturaId, desde, hasta);
+        Integer idReserva = reservaStorage.save(reserva);
+        reservas.put(idReserva, reserva);
     }
 
     public void borrarReserva(int idReserva) {
