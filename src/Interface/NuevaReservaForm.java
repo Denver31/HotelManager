@@ -199,6 +199,7 @@ public class NuevaReservaForm extends JFrame {
 
             Factura factura = new Factura(
                     total,
+                    0,
                     Factura.tipoDePago.TOTAL,
                     metodoDePagoStrToEnum(metodo),
                     cantPagos,

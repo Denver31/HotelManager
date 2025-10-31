@@ -23,9 +23,9 @@ public class Factura {
     private tipoDePago tipo;
     private metodoDePago metodo;
     private LocalDate pagarHasta;
-    public Factura(double total, tipoDePago tipo, metodoDePago metodo, int cantPagos, LocalDate pagarHasta) {
+    public Factura(double total, double pagado, tipoDePago tipo, metodoDePago metodo, int cantPagos, LocalDate pagarHasta) {
         this.tipo = tipo;
-        this.pagado = 0;
+        this.pagado = pagado;
         this.pagarHasta = pagarHasta;
         this.metodo=metodo;
 

@@ -73,6 +73,7 @@ public class FacturaStorage extends BaseStorage {
 
                 Factura f = new Factura(
                         rs.getDouble("total"),
+                        rs.getDouble("pagado"),
                         Factura.tipoDePago.valueOf(rs.getString("tipo")),
                         Factura.metodoDePago.valueOf(rs.getString("metodo")),
                         rs.getInt("cantPagos"),

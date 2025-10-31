@@ -26,6 +26,7 @@ public class Sistema {
         habitaciones = habitacionStorage.getAll();
         huespedes = huespedeStorage.getAll();
         facturas = facturaStorage.getAll();
+        System.out.println(facturas.get(1).getPagado());
         reservas = reservaStorage.getAll();
     }
 

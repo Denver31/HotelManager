@@ -39,7 +39,8 @@ public class Main {
     public static void test_facturas_storage() {
         FacturaStorage storage = new FacturaStorage("hotel.db");
         Factura f1 = new Factura(
-                12.23,
+                100,
+                100,
                 Factura.tipoDePago.TOTAL,
                 Factura.metodoDePago.TARJETA,
                 1,

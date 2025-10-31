@@ -118,6 +118,8 @@ public class HotelDashboard extends JFrame {
 
         addActionButton(card, "Check-out", () ->
                 info("Funcionalidad de check-out próximamente."));
+        addActionButton(card, "Pagas", () ->
+                SwingUtilities.invokeLater(() -> new NuevoPagoForm(sistema).setVisible(true)));
 
         return card;
     }
