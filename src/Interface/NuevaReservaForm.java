@@ -206,7 +206,7 @@ public class NuevaReservaForm extends JFrame {
             );
 
             Huespede huespede = new Huespede(
-                    nombre + apellido,
+                    nombre + " " + apellido,
                     dni
             );
 
