@@ -51,10 +51,11 @@ public class Sistema {
         facturas.remove(idFactura);
     }
 
-    public void agregarReserva(int idHabitacion, String dniHuespede, Factura factura,
+    public void agregarReserva(int idHabitacion, Huespede huespede, Factura factura,
                                java.time.LocalDate desde, java.time.LocalDate hasta) {
         Integer facturaId = agregarFactura(factura);
-        Reserva reserva = new Reserva(idHabitacion, dniHuespede, facturaId, desde, hasta);
+        agregarHuespede(huespede);
+        Reserva reserva = new Reserva(idHabitacion, huespede.getDNI(), facturaId, desde, hasta);
         Integer idReserva = reservaStorage.save(reserva);
         reservas.put(idReserva, reserva);
     }
