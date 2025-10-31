@@ -40,21 +40,18 @@ public class SeleccionarFacturaDialog extends JDialog {
         title.setForeground(acento);
         content.add(title, BorderLayout.NORTH);
 
-        // Tabla
         tableModel = new FacturasTableModel(sistema);
         table = new JTable(tableModel);
         table.setRowHeight(24);
         table.setFillsViewportHeight(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // сортировка по клику по заголовкам
         TableRowSorter<FacturasTableModel> sorter = new TableRowSorter<>(tableModel);
         sorter.setComparator(0, Comparator.naturalOrder()); // ID
         sorter.setComparator(2, Comparator.comparingDouble(a -> (Double) a)); // Precio
         sorter.setComparator(3, Comparator.naturalOrder()); // Capacidad
         table.setRowSorter(sorter);
 
-        // двойной клик = выбрать
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -67,7 +64,6 @@ public class SeleccionarFacturaDialog extends JDialog {
         JScrollPane scroll = new JScrollPane(table);
         content.add(scroll, BorderLayout.CENTER);
 
-        // Кнопки
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.setBackground(fondo);
 
@@ -84,7 +80,6 @@ public class SeleccionarFacturaDialog extends JDialog {
         buttons.add(select);
         content.add(buttons, BorderLayout.SOUTH);
 
-        // Если нет комнат — предупредим
         if (tableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this,
                     "Aún no hay pagas creadas.\nAgregá un pago antes de seleccionar.",
@@ -107,14 +102,10 @@ public class SeleccionarFacturaDialog extends JDialog {
         dispose();
     }
 
-    /**
-     * Возвращает выбранный ID (или null, если пользователь отменил)
-     */
     public Integer getSelectedFacturaId() {
         return selectedHabitacionId;
     }
 
-    // ---- TableModel ----
     private static class FacturasTableModel extends AbstractTableModel {
         private final String[] cols = {"ID", "Total", "Pagado", "Hasta"};
         private final List<Fila> data = new ArrayList<>();
@@ -141,7 +132,6 @@ public class SeleccionarFacturaDialog extends JDialog {
                     data.add(new Fila(id, f.getTotal(), f.getPagado(), f.getPagarHasta()));
                 }
             }
-            // Лёгкая сортировка по ID по умолчанию
             data.sort(Comparator.comparingInt(o -> o.id));
         }
 

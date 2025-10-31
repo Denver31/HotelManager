@@ -113,9 +113,6 @@ public class NuevoPagoForm extends JFrame {
         return seleccionarBtn;
     }
 
-    /* =========================
-     *        ACTIONS
-     * ========================= */
     private void openSeleccionarFacturaDialog() {
         SeleccionarFacturaDialog dlg = new SeleccionarFacturaDialog(this, sistema);
         dlg.setVisible(true);
@@ -123,12 +120,10 @@ public class NuevoPagoForm extends JFrame {
         if (id != null) {
             facturaIdField.setText(String.valueOf(id));
 
-            // ★ получаем фактуру и настраиваем лимиты
-            Factura f = sistema.getFacturaById(id); // предполагаем, что такой метод есть
+            Factura f = sistema.getFacturaById(id);
             if (f != null) {
                 configureCantPagosSpinner(f);
             } else {
-                // на всякий — если не нашлось
                 cantPagosSpinner.setEnabled(false);
             }
         }
@@ -182,9 +177,6 @@ public class NuevoPagoForm extends JFrame {
         }
     }
 
-    /* =========================
-     *       VALIDATION
-     * ========================= */
     private boolean validateRequired() {
         String facturaIdStr = facturaIdField.getText().trim();
 
@@ -195,9 +187,6 @@ public class NuevoPagoForm extends JFrame {
         return true;
     }
 
-    /* =========================
-     *       HELPERS
-     * ========================= */
     private static GridBagConstraints baseGbc() {
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);

@@ -16,7 +16,6 @@ import java.util.Date;
 
 public class NuevaReservaForm extends JFrame {
 
-    // UI fields
     private JTextField habitacionIdField;
     private JTextField dniField;
     private JTextField nombreField;
@@ -26,11 +25,9 @@ public class NuevaReservaForm extends JFrame {
     private JComboBox<String> metodoCombo;
     private JSpinner  cantPagosSpinner;
 
-    // Style
     private final Color fondo  = new Color(245, 247, 250);
     private final Color acento = new Color(0, 120, 215);
 
-    // Data
     private final Sistema sistema;
 
     public NuevaReservaForm(Sistema sistema) {
@@ -39,9 +36,6 @@ public class NuevaReservaForm extends JFrame {
         add(buildMainPanel());
     }
 
-    /* =========================
-     *     FRAME / PANELS
-     * ========================= */
     private void setupFrame() {
         setTitle("Nueva Reserva");
         setSize(560, 520);
@@ -73,41 +67,33 @@ public class NuevaReservaForm extends JFrame {
         form.setBackground(fondo);
         GridBagConstraints c = baseGbc();
 
-        // Fields init
         initCoreFields();
 
-        // Row 0: Habitación
         addL(form, "Habitación (ID):", c, 0, 0);
         addF(form, habitacionIdField, c, 1, 0);
         addF(form, buildSelectHabitacionButton(), c, 2, 0, 0);
 
-        // Row 1: DNI
         addL(form, "DNI o Pasaporte del cliente:", c, 0, 1);
         addFSpan2(form, dniField, c, 1, 1);
 
-        // Row 2: Nombre
         addL(form, "Nombre del cliente:", c, 0, 2);
         addFSpan2(form, nombreField, c, 1, 2);
 
-        // Row 3: Apellido
         addL(form, "Apellido del cliente:", c, 0, 3);
         addFSpan2(form, apellidoField, c, 1, 3);
 
-        // Row 4-5: Fechas
         addL(form, "Desde (fecha):", c, 0, 4);
         addFSpan2(form, desdeSpinner, c, 1, 4);
 
         addL(form, "Hasta (fecha):", c, 0, 5);
         addFSpan2(form, hastaSpinner, c, 1, 5);
 
-        // Row 6-7: Pago
         addL(form, "Método de pago:", c, 0, 6);
         addFSpan2(form, metodoCombo, c, 1, 6);
 
         addL(form, "Cantidad de pagos:", c, 0, 7);
         addFSpan2(form, cantPagosSpinner, c, 1, 7);
 
-        // listeners depend on initialized fields
         setupPaymentControls();
 
         return form;
@@ -129,9 +115,6 @@ public class NuevaReservaForm extends JFrame {
         return panel;
     }
 
-    /* =========================
-     *        INIT / UI
-     * ========================= */
     private void initCoreFields() {
         habitacionIdField = new JTextField();
         habitacionIdField.setEditable(false);
@@ -140,12 +123,10 @@ public class NuevaReservaForm extends JFrame {
         nombreField = new JTextField();
         apellidoField = new JTextField();
 
-        // Date spinners
         Date hoy = new Date();
         desdeSpinner = createDateSpinner(hoy);
         hastaSpinner = createDateSpinner(hoy);
 
-        // Pago
         metodoCombo = new JComboBox<>(new String[]{"TRANSFERENCIA", "TARJETA DE CREDITO"});
         metodoCombo.setSelectedItem("TRANSFERENCIA");
         cantPagosSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 36, 1));
@@ -167,9 +148,6 @@ public class NuevaReservaForm extends JFrame {
         });
     }
 
-    /* =========================
-     *        ACTIONS
-     * ========================= */
     private void openSeleccionarHabitacionDialog() {
         SeleccionarHabitacionDialog dlg = new SeleccionarHabitacionDialog(this, sistema);
         dlg.setVisible(true);
@@ -222,7 +200,6 @@ public class NuevaReservaForm extends JFrame {
                     "\nMétodo de pago: " + metodo +
                     "\nCant. pagos: " + cantPagos);
 
-            // éxito → закрываем форму
             dispose();
 
         } catch (Exception ex) {
@@ -230,9 +207,6 @@ public class NuevaReservaForm extends JFrame {
         }
     }
 
-    /* =========================
-     *       VALIDATION
-     * ========================= */
     private boolean validateRequired() {
         String habitacionIdStr = habitacionIdField.getText().trim();
         String dni = dniField.getText().trim();
@@ -252,9 +226,6 @@ public class NuevaReservaForm extends JFrame {
         return true;
     }
 
-    /* =========================
-     *       HELPERS
-     * ========================= */
     private static GridBagConstraints baseGbc() {
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6, 6, 6, 6);
@@ -314,9 +285,6 @@ public class NuevaReservaForm extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "Reserva registrada", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /* =========================
-     *         MAIN
-     * ========================= */
     public static void main(String[] args) {
         Sistema sistema = new Sistema("hotel.db", "hotel.db", "hotel.db", "hotel.db");
         SwingUtilities.invokeLater(() -> new NuevaReservaForm(sistema).setVisible(true));
