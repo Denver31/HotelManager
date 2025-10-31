@@ -18,12 +18,6 @@ public class NuevoPagoForm extends JFrame {
 
     // UI fields
     private JTextField FacturaIdField;
-    private JTextField dniField;
-    private JTextField nombreField;
-    private JTextField apellidoField;
-    private JSpinner  desdeSpinner;
-    private JSpinner  hastaSpinner;
-    private JComboBox<String> metodoCombo;
     private JSpinner  cantPagosSpinner;
 
     // Style
@@ -84,9 +78,6 @@ public class NuevoPagoForm extends JFrame {
         addL(form, "Cuanto pago:", c, 0, 7);
         addFSpan2(form, cantPagosSpinner, c, 1, 7);
 
-        // listeners depend on initialized fields
-        setupPaymentControls();
-
         return form;
     }
 
@@ -100,7 +91,7 @@ public class NuevoPagoForm extends JFrame {
         crearBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
         crearBtn.setFocusPainted(false);
         crearBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        crearBtn.addActionListener(e -> onCreateReserva());
+        crearBtn.addActionListener(e -> onPagarFactura());
 
         panel.add(crearBtn);
         return panel;
@@ -113,35 +104,14 @@ public class NuevoPagoForm extends JFrame {
         FacturaIdField = new JTextField();
         FacturaIdField.setEditable(false);
 
-        dniField = new JTextField();
-        nombreField = new JTextField();
-        apellidoField = new JTextField();
-
-        // Date spinners
-        Date hoy = new Date();
-        desdeSpinner = createDateSpinner(hoy);
-        hastaSpinner = createDateSpinner(hoy);
-
-        // Pago
-        metodoCombo = new JComboBox<>(new String[]{"TRANSFERENCIA", "TARJETA DE CREDITO"});
-        metodoCombo.setSelectedItem("TRANSFERENCIA");
         cantPagosSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 36, 1));
-        cantPagosSpinner.setEnabled(false); // transferencia => 1 pago
+        cantPagosSpinner.setEnabled(false);
     }
 
     private JButton buildSelectFacturaButton() {
         JButton seleccionarBtn = new JButton("Seleccionar Factura…");
         seleccionarBtn.addActionListener(e -> openSeleccionarFacturaDialog());
         return seleccionarBtn;
-    }
-
-    private void setupPaymentControls() {
-        metodoCombo.addActionListener(e -> {
-            String m = (String) metodoCombo.getSelectedItem();
-            boolean tarjeta = "TARJETA DE CREDITO".equals(m);
-            cantPagosSpinner.setEnabled(tarjeta);
-            if (!tarjeta) cantPagosSpinner.setValue(1);
-        });
     }
 
     /* =========================
@@ -154,49 +124,17 @@ public class NuevoPagoForm extends JFrame {
         if (id != null) FacturaIdField.setText(String.valueOf(id));
     }
 
-    private void onCreateReserva() {
+    private void onPagarFactura() {
         if (!validateRequired()) return;
 
-        LocalDate desde = toLocalDate((Date) desdeSpinner.getValue());
-        LocalDate hasta = toLocalDate((Date) hastaSpinner.getValue());
-
-        if (!validateDateRange(desde, hasta)) return;
-
-        int habitacionId = Integer.parseInt(FacturaIdField.getText().trim());
-        String dni      = dniField.getText().trim();
-        String nombre   = nombreField.getText().trim();
-        String apellido = apellidoField.getText().trim();
-        String metodo   = (String) metodoCombo.getSelectedItem();
+        int facturaId = Integer.parseInt(FacturaIdField.getText().trim());
         int cantPagos   = (Integer) cantPagosSpinner.getValue();
 
         try {
-            Habitacion habitacion = sistema.getHabitacionById(habitacionId);
-            long noches = ChronoUnit.DAYS.between(desde, hasta); // Hasta es exclusiva (clásico en hotelería)
-            double total = habitacion.getPrecio() * Math.max(noches, 1); // safety net на 1 ночь
-
-            Factura factura = new Factura(
-                    total,
-                    0,
-                    Factura.tipoDePago.TOTAL,
-                    metodoDePagoStrToEnum(metodo),
-                    cantPagos,
-                    LocalDate.now().plusWeeks(1)
-            );
-
-            Huespede huespede = new Huespede(
-                    nombre + " " + apellido,
-                    dni
-            );
-
-            sistema.agregarReserva(habitacionId, huespede, factura, desde, hasta);
+            sistema.pagarFactura(facturaId, cantPagos);
 
             showInfo("✅ Reserva creada con éxito:\n\n" +
-                    "Habitación (ID): " + habitacionId +
-                    "\nCliente: " + nombre + " " + apellido +
-                    "\nDNI/Pasaporte: " + dni +
-                    "\nDesde: " + desde +
-                    "\nHasta: " + hasta +
-                    "\nMétodo de pago: " + metodo +
+                    "Factura (ID): " + facturaId +
                     "\nCant. pagos: " + cantPagos);
 
             // éxito → закрываем форму
@@ -211,11 +149,10 @@ public class NuevoPagoForm extends JFrame {
      *       VALIDATION
      * ========================= */
     private boolean validateRequired() {
-        String habitacionIdStr = FacturaIdField.getText().trim();
-        String dni = dniField.getText().trim();
+        String facturaIdStr = FacturaIdField.getText().trim();
 
-        if (habitacionIdStr.isEmpty() || dni.isEmpty()) {
-            showWarn("Por favor, completá los campos obligatorios (Habitación y DNI).");
+        if (facturaIdStr.isEmpty()) {
+            showWarn("Por favor, completá los campos obligatorios (Factura).");
             return false;
         }
         return true;
