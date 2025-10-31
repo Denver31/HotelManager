@@ -157,8 +157,8 @@ public class HotelDashboard extends JFrame {
     private void refreshSalidas() {
         ArrayList<Sistema.Movimiento> salidas = sistema.getSalidas();
 
-        entradasModel.clear();
-        for (Sistema.Movimiento m : salidas) entradasModel.addElement("• " + m.getHuespede() + "-" + m.getFecha());
+        salidasModel.clear();
+        for (Sistema.Movimiento m : salidas) salidasModel.addElement("• " + m.getHuespede() + "-" + m.getFecha());
     }
 
     private void refreshFacturasVencidas() {

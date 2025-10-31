@@ -2,6 +2,7 @@ package src.Interface;
 
 import src.classes.Habitacion;
 import src.classes.Factura;
+import src.classes.Huespede;
 import src.classes.Sistema;
 
 import javax.swing.*;
@@ -204,7 +205,12 @@ public class NuevaReservaForm extends JFrame {
                     LocalDate.now().plusWeeks(1)
             );
 
-            sistema.agregarReserva(habitacionId, dni, factura, desde, hasta);
+            Huespede huespede = new Huespede(
+                    nombre + apellido,
+                    dni
+            );
+
+            sistema.agregarReserva(habitacionId, huespede, factura, desde, hasta);
 
             showInfo("✅ Reserva creada con éxito:\n\n" +
                     "Habitación (ID): " + habitacionId +
