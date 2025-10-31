@@ -1,24 +1,22 @@
 package src.Interface;
 
-import src.classes.Habitacion;
 import src.classes.Factura;
-import src.classes.Huespede;
 import src.classes.Sistema;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 
 public class NuevoPagoForm extends JFrame {
 
     // UI fields
-    private JTextField FacturaIdField;
-    private JSpinner  cantPagosSpinner;
+    private JTextField facturaIdField;
+    private JSpinner   cantPagosSpinner;
 
     // Style
     private final Color fondo  = new Color(245, 247, 250);
@@ -38,7 +36,7 @@ public class NuevoPagoForm extends JFrame {
      * ========================= */
     private void setupFrame() {
         setTitle("Nuevo pago");
-        setSize(560, 520);
+        setSize(560, 280);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
@@ -56,7 +54,7 @@ public class NuevoPagoForm extends JFrame {
     }
 
     private JComponent buildTitle() {
-        JLabel titulo = new JLabel("📝 Crear nuevo pago", SwingConstants.CENTER);
+        JLabel titulo = new JLabel("📝 Registrar pago de factura", SwingConstants.CENTER);
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         titulo.setForeground(acento);
         return titulo;
@@ -67,16 +65,16 @@ public class NuevoPagoForm extends JFrame {
         form.setBackground(fondo);
         GridBagConstraints c = baseGbc();
 
-        // Fields init
         initCoreFields();
 
-        // Row 0: Habitación
+        // fila 0: factura
         addL(form, "Factura (ID):", c, 0, 0);
-        addF(form, FacturaIdField, c, 1, 0);
+        addF(form, facturaIdField, c, 1, 0);
         addF(form, buildSelectFacturaButton(), c, 2, 0, 0);
-        
-        addL(form, "Cuanto pago:", c, 0, 7);
-        addFSpan2(form, cantPagosSpinner, c, 1, 7);
+
+        // fila 1: cantidad de pagos
+        addL(form, "Cantidad pagos:", c, 0, 1);
+        addFSpan2(form, cantPagosSpinner, c, 1, 1);
 
         return form;
     }
@@ -85,7 +83,7 @@ public class NuevoPagoForm extends JFrame {
         JPanel panel = new JPanel();
         panel.setBackground(fondo);
 
-        JButton crearBtn = new JButton("Crear reserva");
+        JButton crearBtn = new JButton("Registrar pago");
         crearBtn.setBackground(acento);
         crearBtn.setForeground(Color.WHITE);
         crearBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
@@ -101,15 +99,16 @@ public class NuevoPagoForm extends JFrame {
      *        INIT / UI
      * ========================= */
     private void initCoreFields() {
-        FacturaIdField = new JTextField();
-        FacturaIdField.setEditable(false);
+        facturaIdField = new JTextField();
+        facturaIdField.setEditable(false);
 
-        cantPagosSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 36, 1));
+        // по умолчанию выключен — включим после выбора фактуры
+        cantPagosSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 1, 1));
         cantPagosSpinner.setEnabled(false);
     }
 
     private JButton buildSelectFacturaButton() {
-        JButton seleccionarBtn = new JButton("Seleccionar Factura…");
+        JButton seleccionarBtn = new JButton("Seleccionar factura…");
         seleccionarBtn.addActionListener(e -> openSeleccionarFacturaDialog());
         return seleccionarBtn;
     }
@@ -121,27 +120,65 @@ public class NuevoPagoForm extends JFrame {
         SeleccionarFacturaDialog dlg = new SeleccionarFacturaDialog(this, sistema);
         dlg.setVisible(true);
         Integer id = dlg.getSelectedFacturaId();
-        if (id != null) FacturaIdField.setText(String.valueOf(id));
+        if (id != null) {
+            facturaIdField.setText(String.valueOf(id));
+
+            // ★ получаем фактуру и настраиваем лимиты
+            Factura f = sistema.getFacturaById(id); // предполагаем, что такой метод есть
+            if (f != null) {
+                configureCantPagosSpinner(f);
+            } else {
+                // на всякий — если не нашлось
+                cantPagosSpinner.setEnabled(false);
+            }
+        }
+    }
+
+    private void configureCantPagosSpinner(Factura f) {
+        double total   = f.getTotal();
+        double pagado  = f.getPagado();
+        int cantTotal  = f.getCantPagos();
+
+        if (cantTotal <= 0 || total <= 0) {
+            cantPagosSpinner.setModel(new SpinnerNumberModel(1, 1, 1, 1));
+            cantPagosSpinner.setEnabled(false);
+            return;
+        }
+
+        double cuota = total / cantTotal;
+        double restante = total - pagado;
+
+        if (restante <= 0.0001) {
+            cantPagosSpinner.setModel(new SpinnerNumberModel(1, 1, 1, 1));
+            cantPagosSpinner.setEnabled(false);
+            return;
+        }
+
+        int pagosRestantes = (int) Math.round(restante / cuota);
+        if (pagosRestantes < 1) pagosRestantes = 1;
+
+        SpinnerNumberModel model = new SpinnerNumberModel(1, 1, pagosRestantes, 1);
+        cantPagosSpinner.setModel(model);
+        cantPagosSpinner.setEnabled(true);
     }
 
     private void onPagarFactura() {
         if (!validateRequired()) return;
 
-        int facturaId = Integer.parseInt(FacturaIdField.getText().trim());
-        int cantPagos   = (Integer) cantPagosSpinner.getValue();
+        int facturaId = Integer.parseInt(facturaIdField.getText().trim());
+        int cantPagos = (Integer) cantPagosSpinner.getValue();
 
         try {
             sistema.pagarFactura(facturaId, cantPagos);
 
-            showInfo("✅ Reserva creada con éxito:\n\n" +
+            showInfo("✅ Pago registrado:\n" +
                     "Factura (ID): " + facturaId +
-                    "\nCant. pagos: " + cantPagos);
+                    "\nCantidad de pagos: " + cantPagos);
 
-            // éxito → закрываем форму
             dispose();
 
         } catch (Exception ex) {
-            showError("Ocurrió un error al crear la reserva:\n" + ex.getMessage());
+            showError("Ocurrió un error al registrar el pago:\n" + ex.getMessage());
         }
     }
 
@@ -149,18 +186,10 @@ public class NuevoPagoForm extends JFrame {
      *       VALIDATION
      * ========================= */
     private boolean validateRequired() {
-        String facturaIdStr = FacturaIdField.getText().trim();
+        String facturaIdStr = facturaIdField.getText().trim();
 
         if (facturaIdStr.isEmpty()) {
-            showWarn("Por favor, completá los campos obligatorios (Factura).");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean validateDateRange(LocalDate desde, LocalDate hasta) {
-        if (!hasta.isAfter(desde)) {
-            showWarn("La fecha 'Hasta' debe ser posterior a 'Desde'.");
+            showWarn("Por favor, seleccioná una factura.");
             return false;
         }
         return true;
@@ -210,12 +239,6 @@ public class NuevoPagoForm extends JFrame {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private static Factura.metodoDePago metodoDePagoStrToEnum(String metodo) {
-        if ("TRANSFERENCIA".equals(metodo)) return Factura.metodoDePago.TRANSFERENCIA;
-        if ("TARJETA DE CREDITO".equals(metodo)) return Factura.metodoDePago.TARJETA;
-        return Factura.metodoDePago.TRANSFERENCIA;
-    }
-
     private void showWarn(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Aviso", JOptionPane.WARNING_MESSAGE);
     }
@@ -225,14 +248,11 @@ public class NuevoPagoForm extends JFrame {
     }
 
     private void showInfo(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Reserva registrada", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, msg, "Pago registrado", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /* =========================
-     *         MAIN
-     * ========================= */
     public static void main(String[] args) {
         Sistema sistema = new Sistema("hotel.db", "hotel.db", "hotel.db", "hotel.db");
-        SwingUtilities.invokeLater(() -> new NuevaReservaForm(sistema).setVisible(true));
+        SwingUtilities.invokeLater(() -> new NuevoPagoForm(sistema).setVisible(true));
     }
 }
