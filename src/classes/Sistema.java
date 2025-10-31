@@ -26,6 +26,7 @@ public class Sistema {
         habitaciones = habitacionStorage.getAll();
         huespedes = huespedeStorage.getAll();
         facturas = facturaStorage.getAll();
+        System.out.println(facturas.get(1).getPagado());
         reservas = reservaStorage.getAll();
     }
 
@@ -70,12 +71,24 @@ public class Sistema {
         return habitaciones.get(idHabitacion);
     }
 
+    public Factura getFacturaById(int idFactura) {
+        return facturas.get(idFactura);
+    }
+
     public Map<Integer, Habitacion> getHabitaciones() {
         return Collections.unmodifiableMap(habitaciones);
     }
 
     public Map<Integer, Factura> getFacturas() {
         return Collections.unmodifiableMap(facturas);
+    }
+
+    public void pagarFactura(Integer idFactura, Integer cantPagos) {
+        Factura factura = facturas.get(idFactura);
+        for (int i = 0; i < cantPagos; i++) {
+            factura.pagar();
+        }
+        facturaStorage.update(idFactura, factura);
     }
 
     public class Movimiento {

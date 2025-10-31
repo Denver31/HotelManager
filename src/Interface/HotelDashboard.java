@@ -11,7 +11,6 @@ import java.util.Comparator;
 
 public class HotelDashboard extends JFrame {
 
-    // --- UI цвета/шрифты ---
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
@@ -21,7 +20,6 @@ public class HotelDashboard extends JFrame {
 
     private final Sistema sistema;
 
-    // --- refs для обновления ---
     private JLabel ocupacionValueLbl;
     private DefaultListModel<String> entradasModel;
     private DefaultListModel<String> salidasModel;
@@ -34,7 +32,6 @@ public class HotelDashboard extends JFrame {
         add(buildMainPanel());
     }
 
-    // ---------- Инициализация окна ----------
     private void setupFrame() {
         setTitle("Hotel Management System - Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,34 +39,25 @@ public class HotelDashboard extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    // ---------- Каркас главной панели ----------
     private JPanel buildMainPanel() {
         JPanel main = new JPanel(new GridBagLayout());
         main.setBackground(BG);
         GridBagConstraints gbc = baseGbc();
 
-        // Заголовок
         gbc = place(main, createTitle("📊 Dashboard - Resumen"), gbc, 0, 0, 3, 1, 1, 0);
 
-        // Карточка «Ocupación»
         gbc = place(main, createOcupacionPanel(), gbc, 0, 1, 1, 1, .5, .2);
 
-        // Карточка «Próximas entradas»
         gbc = place(main, createEntradasPanel(), gbc, 1, 1, 1, 1, 1, .2);
 
-        // Карточка «Accesos rápidos» (БЕЗ refresh)
         gbc = place(main, createAccesosPanel(), gbc, 2, 1, 1, 3, .3, 1);
 
-        // Карточка «Próximas salidas»
         gbc = place(main, createSalidasPanel(), gbc, 0, 2, 1, 1, .5, .2);
 
-        // Карточка «Reservas pendientes de cobro»
         gbc = place(main, createPendientesPanel(), gbc, 1, 2, 1, 1, 1, .2);
 
-        // Карточка «Facturas vencidas»
         gbc = place(main, createFacturasPanel(), gbc, 0, 3, 2, 1, 1, .4);
 
-        // первичная загрузка
         refreshOcupacion();
         refreshEntradas();
         refreshSalidas();
@@ -79,7 +67,6 @@ public class HotelDashboard extends JFrame {
         return main;
     }
 
-    // ---------- Отдельные карточки ----------
     private JPanel createOcupacionPanel() {
         JPanel card = createCard("Ocupación", this::refreshOcupacion, true);
         ocupacionValueLbl = new JLabel("Cargando…", SwingConstants.CENTER);
@@ -103,7 +90,6 @@ public class HotelDashboard extends JFrame {
     }
 
     private JPanel createAccesosPanel() {
-        // Без кнопки refresh
         JPanel card = createCard("Accesos rápidos", null, false);
         card.setLayout(new GridLayout(4, 1, 10, 10));
 
@@ -112,12 +98,8 @@ public class HotelDashboard extends JFrame {
 
         addActionButton(card, "Agregar Habitacion", () ->
                 SwingUtilities.invokeLater(() -> new NuevaHabitacionForm(sistema).setVisible(true)));
-
-        addActionButton(card, "Check-in", () ->
-                info("Funcionalidad de check-in próximamente."));
-
-        addActionButton(card, "Check-out", () ->
-                info("Funcionalidad de check-out próximamente."));
+        addActionButton(card, "Pagas", () ->
+                SwingUtilities.invokeLater(() -> new NuevoPagoForm(sistema).setVisible(true)));
 
         return card;
     }
@@ -140,7 +122,6 @@ public class HotelDashboard extends JFrame {
         return card;
     }
 
-    // ---------- Refresh-методы ----------
     private void refreshOcupacion() {
         // TODO: заменить на реальные данные из sistema (например, sistema.getOcupacionPorcentaje())
         int porcentaje = 72;
@@ -172,19 +153,13 @@ public class HotelDashboard extends JFrame {
     }
 
     private void refreshPendientes() {
-        // Если модель тянет данные из Sistema в конструкторе — пересоздаём
-        FacturasPendientesTableModel model = new FacturasPendientesTableModel(sistema);
+       FacturasPendientesTableModel model = new FacturasPendientesTableModel(sistema);
         pendientesTable.setModel(model);
         configureTablaPendientesSorter(pendientesTable);
         pendientesTable.revalidate();
         pendientesTable.repaint();
     }
 
-    // ---------- Вспомогалки UI ----------
-    /**
-     * Карточка с шапкой: заголовок + опциональная кнопка «↻ Actualizar».
-     * Если showRefresh=false, кнопка не добавляется.
-     */
     private JPanel createCard(String title, Runnable onRefresh, boolean showRefresh) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(CARD);
@@ -253,7 +228,6 @@ public class HotelDashboard extends JFrame {
         tabla.setRowSorter(sorter);
     }
 
-    // ---------- GridBag утилиты ----------
     private GridBagConstraints baseGbc() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);

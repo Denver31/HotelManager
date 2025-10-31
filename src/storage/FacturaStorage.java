@@ -61,6 +61,36 @@ public class FacturaStorage extends BaseStorage {
         return -1;
     }
 
+    public void update(int idFactura, Factura f) {
+        String sql = "UPDATE facturas " +
+                "SET total = ?, pagado = ?, cantPagos = ?, tipo = ?, metodo = ?, pagarHasta = ? " +
+                "WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setDouble(1, f.getTotal());
+            pstmt.setDouble(2, f.getPagado());
+            pstmt.setInt(3, f.getCantPagos());
+            pstmt.setString(4, f.getTipo().name());
+            pstmt.setString(5, f.getMetodo().name());
+            pstmt.setString(6, f.getPagarHasta().toString());
+            pstmt.setInt(7, idFactura);
+
+            int rows = pstmt.executeUpdate();
+            if (rows > 0) {
+                System.out.println("✏️ Factura con id = " + idFactura + " actualizada.");
+                return;
+            } else {
+                System.out.println("⚠️ Factura con id = " + idFactura + " no encontrada.");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("error: " + e.getMessage());
+        }
+    }
+
+
     public Map<Integer, Factura> getAll() {
         Map<Integer, Factura> FacturasMap = new HashMap<>();
         String sql = "SELECT * FROM facturas";
@@ -73,6 +103,7 @@ public class FacturaStorage extends BaseStorage {
 
                 Factura f = new Factura(
                         rs.getDouble("total"),
+                        rs.getDouble("pagado"),
                         Factura.tipoDePago.valueOf(rs.getString("tipo")),
                         Factura.metodoDePago.valueOf(rs.getString("metodo")),
                         rs.getInt("cantPagos"),

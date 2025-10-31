@@ -21,12 +21,11 @@ public class FacturasPendientesTableModel extends AbstractTableModel {
     private final DateTimeFormatter df = DateTimeFormatter.ISO_LOCAL_DATE;
 
     public FacturasPendientesTableModel(Sistema sistema) {
-        // ожидается, что в Sistema есть: public Map<Integer, Factura> getFacturas()
         Map<Integer, Factura> facturas = sistema.getFacturas();
 
         this.data = facturas.entrySet().stream()
-                .filter(e -> e.getValue() != null && !e.getValue().esPagado()) // только с долгом
-                .sorted(Comparator.comparing(e -> e.getValue().getPagarHasta())) // по сроку оплаты
+                .filter(e -> e.getValue() != null && !e.getValue().esPagado())
+                .sorted(Comparator.comparing(e -> e.getValue().getPagarHasta()))
                 .map(e -> new Fila(e.getKey(), e.getValue()))
                 .collect(Collectors.toList());
     }
