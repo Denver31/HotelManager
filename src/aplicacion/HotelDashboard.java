@@ -103,7 +103,8 @@ public class HotelDashboard extends JFrame {
 
         addActionButton(card, "Pagos", () ->
                 SwingUtilities.invokeLater(() -> new NuevoPagoForm(sistema).setVisible(true)));
-
+        addActionButton(card, "Panel de habitaciones", () ->
+                SwingUtilities.invokeLater(() -> new HabitacionesPanel(sistema).setVisible(true)));
         return card;
     }
 
