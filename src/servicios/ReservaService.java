@@ -1,123 +1,208 @@
 package servicios;
 
-import aplicacion.Sistema;
 import dominio.*;
-import validaciones.DisponibilidadException;
-import validaciones.ValidacionException;
-import validaciones.Validator;
+import validaciones.*;
 import almacenamiento.ReservaStorage;
+
 import java.time.LocalDate;
 import java.util.List;
 
 public class ReservaService {
 
-    private ReservaStorage storage;
+    private final ReservaStorage storage;
 
     public ReservaService(ReservaStorage storage) {
+        if (storage == null)
+            throw new InputException("ReservaStorage no puede ser null.");
         this.storage = storage;
     }
 
-    public Reserva crearReserva(Habitacion h, Huesped hu, Factura f, LocalDate desde, LocalDate hasta) {
+    private Reserva obtenerReserva(int id) {
+        if (id <= 0)
+            throw new InputException("ID de reserva inválido.");
+
+        Reserva r = storage.findById(id);
+        if (r == null)
+            throw new BusinessRuleException("Reserva no encontrada.");
+
+        return r;
+    }
+
+    // ============================================================
+    // Crear reserva
+    // ============================================================
+    public Reserva crearReserva(Habitacion h, Huesped hu, Factura f,
+                                LocalDate desde, LocalDate hasta) {
+
         if (h == null || hu == null || f == null)
-            throw new ValidacionException("Habitación, huésped y factura son obligatorios.");
+            throw new InputException("Habitación, huésped y factura son obligatorios.");
 
-        Validator.rangoFechas(desde, hasta);
+        if (desde == null || hasta == null) {
+            throw new InputException("Las fechas no pueden ser nulas.");
+        }
+        if (hasta.isBefore(desde)) {
+            throw new InputException("La fecha 'hasta' no puede ser anterior a 'desde'.");
+        }
 
-        // Verificar disponibilidad en la base de datos (no solo en memoria)
-        List<Reserva> existentes = storage.findAll();
-        boolean disponible = existentes.stream().noneMatch(r ->
-                r.getHabitacion().getId() == h.getId() &&
-                        !(hasta.isBefore(r.getDesde()) || desde.isAfter(r.getHasta()))
-        );
+        // validar disponibilidad
+        List<Reserva> reservasHab = storage.findByHabitacion(h.getId());
+
+        boolean disponible = reservasHab.stream()
+                .filter(Reserva::estaOperativa)
+                .noneMatch(r -> r.seSolapaCon(desde, hasta));
 
         if (!disponible)
-            throw new DisponibilidadException("La habitación ya está reservada en esas fechas.");
+            throw new BusinessRuleException("La habitación ya está reservada en ese período.");
 
-        Reserva reserva = new Reserva(h, hu, f, desde, hasta);
-        reserva.setEstado(Reserva.EstadoReserva.PENDIENTE);
-        storage.save(reserva);
-        return reserva;
+        Reserva r = new Reserva(h, hu, f, desde, hasta);
+        storage.save(r);
+        return r;
+    }
+
+    // ============================================================
+    // Transiciones de estado
+    // ============================================================
+    public void confirmar(int idReserva) {
+        Reserva r = obtenerReserva(idReserva);
+        r.confirmar();
+        storage.update(r);
     }
 
     public void hacerCheckIn(int idReserva) {
-        Reserva r = storage.findById(idReserva);
-        if (r == null)
-            throw new ValidacionException("Reserva no encontrada.");
+        Reserva r = obtenerReserva(idReserva);
         r.hacerCheckIn();
         storage.update(r);
     }
 
     public void hacerCheckOut(int idReserva) {
-        Reserva r = storage.findById(idReserva);
-        if (r == null)
-            throw new ValidacionException("Reserva no encontrada.");
+        Reserva r = obtenerReserva(idReserva);
         r.hacerCheckOut();
         storage.update(r);
     }
 
     public void cancelar(int idReserva) {
-        Reserva r = storage.findById(idReserva);
-        if (r == null)
-            throw new ValidacionException("Reserva no encontrada.");
+        Reserva r = obtenerReserva(idReserva);
         r.cancelar();
         storage.update(r);
     }
 
-    public Reserva obtenerPorId(int id) {
-        return storage.findById(id);
+    // ============================================================
+    // Consultas
+    // ============================================================
+    public Reserva obtenerReservaPorId(int id) {
+        return obtenerReserva(id);
     }
 
-    public List<Reserva> listarProximasEntradas(LocalDate desde, LocalDate hasta) {
-        Validator.rangoFechas(desde, hasta);
+    public List<Reserva> listarTodas() {
+        return storage.findAll();
+    }
+
+    public List<Reserva> listarEntradas(LocalDate desde, LocalDate hasta) {
+        if (desde == null || hasta == null) {
+            throw new InputException("Las fechas no pueden ser nulas.");
+        }
+        if (hasta.isBefore(desde)) {
+            throw new InputException("La fecha 'hasta' no puede ser anterior a 'desde'.");
+        }
         return storage.findEntradas(desde, hasta);
     }
 
-    public List<Reserva> listarProximasSalidas(LocalDate desde, LocalDate hasta) {
-        Validator.rangoFechas(desde, hasta);
+    public List<Reserva> listarSalidas(LocalDate desde, LocalDate hasta) {
+        if (desde == null || hasta == null) {
+            throw new InputException("Las fechas no pueden ser nulas.");
+        }
+        if (hasta.isBefore(desde)) {
+            throw new InputException("La fecha 'hasta' no puede ser anterior a 'desde'.");
+        }
         return storage.findSalidas(desde, hasta);
     }
 
-    public List<Reserva> listarTodas(Sistema sistema) {
-        List<Reserva> reservas = storage.findAll();
+    public boolean existeReservaActiva(String dni, int idHabitacion,
+                                       LocalDate desde, LocalDate hasta) {
 
-        for (Reserva r : reservas) {
-            r.setHabitacion(sistema.getHabitacionService().obtenerPorId(r.getHabitacion().getId()));
-            r.setHuesped(sistema.getHuespedService().obtenerPorId(r.getHuesped().getId()));
-            r.setFactura(sistema.getFacturaService().obtenerPorId(r.getFactura().getId()));
+        if (dni == null || dni.isBlank())
+            throw new InputException("DNI no puede ser vacío.");
+
+        if (desde == null || hasta == null) {
+            throw new InputException("Las fechas no pueden ser nulas.");
+        }
+        if (hasta.isBefore(desde)) {
+            throw new InputException("La fecha 'hasta' no puede ser anterior a 'desde'.");
         }
 
-        return reservas;
+        return storage.findByHabitacion(idHabitacion).stream()
+                .filter(r -> dni.equals(r.getHuesped().getDni()))
+                .filter(Reserva::estaOperativa)
+                .anyMatch(r -> r.seSolapaCon(desde, hasta));
     }
 
-    public void confirmarSiPendientePorFactura(int idFactura) {
+    // ============================================================
+    // Métodos auxiliares para HabitacionService
+    // ============================================================
+
+    public boolean poseeReservasOperativas(int idHabitacion) {
+        return storage.findByHabitacion(idHabitacion).stream()
+                .anyMatch(Reserva::estaOperativa);
+    }
+
+    public boolean noTieneSolapamientos(int idHabitacion,
+                                        LocalDate desde, LocalDate hasta) {
+
+        if (desde == null || hasta == null) {
+            throw new InputException("Las fechas no pueden ser nulas.");
+        }
+        if (hasta.isBefore(desde)) {
+            throw new InputException("La fecha 'hasta' no puede ser anterior a 'desde'.");
+        }
+
+        return storage.findByHabitacion(idHabitacion).stream()
+                .filter(Reserva::estaOperativa)
+                .noneMatch(r -> r.seSolapaCon(desde, hasta));
+    }
+
+    // ============================================================
+    // Validación para baja de huéspedes
+    // ============================================================
+    public boolean poseeReservasOperativasDeHuesped(String dni) {
+        if (dni == null || dni.isBlank())
+            throw new InputException("DNI inválido.");
+
+        return storage.findAll().stream()
+                .filter(Reserva::estaOperativa)
+                .anyMatch(r -> dni.equals(r.getHuesped().getDni()));
+    }
+
+    // ============================================================
+    // Facturas → Reservas
+    // ============================================================
+
+    /**
+     * Cuando una factura se paga, si la reserva asociada estaba pendiente,
+     * debe pasar a CONFIRMADA.
+     */
+    public void confirmarReservasConFactura(int idFactura) {
         Reserva r = storage.findByFacturaId(idFactura);
-        if (r != null && r.getEstado() == Reserva.EstadoReserva.PENDIENTE) {
+        if (r == null) return;
+
+        if (r.estaPendiente()) {
             r.setEstado(Reserva.EstadoReserva.CONFIRMADA);
             storage.update(r);
         }
     }
 
-    public void cancelarReservasVencidas() {
-        List<Reserva> reservas = storage.findAll();
-        for (Reserva r : reservas) {
-            if (r.getEstado() == Reserva.EstadoReserva.PENDIENTE &&
-                    r.getFactura().esVencida()) {
-                r.setEstado(Reserva.EstadoReserva.CANCELADA);
-                storage.update(r);
-            }
+    /**
+     * Cuando una factura vence, la reserva asociada debe cancelarse.
+     * Esto solo aplica si la reserva estaba PENDIENTE o CONFIRMADA.
+     */
+    public void cancelarReservaPorFacturaVencida(int idFactura) {
+        Reserva r = storage.findByFacturaId(idFactura);
+        if (r == null) return;
+
+        if (r.estaPendiente() || r.estaConfirmada()) {
+            r.cancelar();
+            storage.update(r);
         }
     }
 
-    public boolean existeReservaActiva(String dni, int idHabitacion, LocalDate desde, LocalDate hasta) {
-        List<Reserva> reservas = storage.findAll();
-        return reservas.stream().anyMatch(r ->
-                r.getHuesped().getDni().equals(dni)
-                        && r.getHabitacion().getId() == idHabitacion
-                        && (r.getEstado() == Reserva.EstadoReserva.PENDIENTE
-                        || r.getEstado() == Reserva.EstadoReserva.CONFIRMADA
-                        || r.getEstado() == Reserva.EstadoReserva.ACTIVA)
-                        && !(hasta.isBefore(r.getDesde()) || desde.isAfter(r.getHasta()))
-        );
-    }
 
 }

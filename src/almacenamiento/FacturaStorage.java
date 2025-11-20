@@ -2,6 +2,9 @@ package almacenamiento;
 
 import dominio.Factura;
 import dominio.Factura.MetodoPago;
+import dominio.Factura.EstadoFactura;
+import validaciones.FunctionalException;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -14,83 +17,64 @@ public class FacturaStorage extends BaseStorage<Factura> {
 
     @Override
     public void save(Factura f) {
-        String sql = "INSERT INTO facturas (total, pagada, fecha_pago, metodo, cuotas, vencimiento) VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setDouble(1, f.getTotal());
-            stmt.setBoolean(2, f.isPagada());
-            stmt.setString(3, f.getFechaPago() != null ? f.getFechaPago().toString() : null);
-            stmt.setString(4, f.getMetodo().name());
-            stmt.setInt(5, f.getCuotas());
-            stmt.setString(6, f.getVencimiento().toString());
-            stmt.executeUpdate();
+        String sql = """
+            INSERT INTO facturas (total, pagada, fecha_pago, metodo, cuotas, vencimiento, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
 
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
+        try (PreparedStatement ps =
+                     connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setDouble(1, f.getTotal());
+            ps.setBoolean(2, f.estaPagada());
+            ps.setDate(3, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
+            ps.setString(4, f.getMetodo().name());
+            ps.setInt(5, f.getCuotas());
+            ps.setDate(6, Date.valueOf(f.getVencimiento()));
+            ps.setString(7, f.getEstado().name());
+
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) f.setId(rs.getInt(1));
             }
+
         } catch (SQLException e) {
-            System.err.println("⚠️ Error al guardar factura: " + e.getMessage());
+            throw new FunctionalException("Error al guardar factura", e);
         }
     }
 
     @Override
     public void update(Factura f) {
-        String sql = "UPDATE facturas SET total=?, pagada=?, fecha_pago=?, metodo=?, cuotas=?, vencimiento=? WHERE id=?";
+        String sql = """
+            UPDATE facturas
+            SET total=?, pagada=?, fecha_pago=?, metodo=?, cuotas=?, vencimiento=?, estado=?
+            WHERE id=?
+        """;
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
             ps.setDouble(1, f.getTotal());
-            ps.setBoolean(2, f.isPagada());
-            ps.setString(3, f.getFechaPago() != null ? f.getFechaPago().toString() : null);
+            ps.setBoolean(2, f.estaPagada());
+            ps.setDate(3, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
             ps.setString(4, f.getMetodo().name());
             ps.setInt(5, f.getCuotas());
-            ps.setString(6, f.getVencimiento().toString());
-            ps.setInt(7, f.getId());
+            ps.setDate(6, Date.valueOf(f.getVencimiento()));
+            ps.setString(7, f.getEstado().name());
+            ps.setInt(8, f.getId());
+
             ps.executeUpdate();
+
         } catch (SQLException e) {
-            System.err.println("⚠️ Error al actualizar factura: " + e.getMessage());
+            throw new FunctionalException("Error al actualizar factura", e);
         }
     }
 
     @Override
     public void delete(int id) {
-        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM facturas WHERE id=?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("⚠️ Error al eliminar factura: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public Factura findById(int id) {
-        String sql = "SELECT * FROM facturas WHERE id=?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return new Factura(
-                        rs.getInt("id"),
-                        rs.getDouble("total"),
-                        Factura.MetodoPago.valueOf(rs.getString("metodo")),
-                        rs.getInt("cuotas"),
-                        LocalDate.parse(rs.getString("vencimiento")),
-                        rs.getBoolean("pagada"),
-                        rs.getString("fecha_pago") != null
-                                ? LocalDate.parse(rs.getString("fecha_pago"))
-                                : null
-                );
-            }
-        } catch (SQLException e) {
-            System.err.println("Error al buscar factura: " + e.getMessage());
-        }
-        return null;
-    }
-
-    @Override
-    public List<Factura> findAll() {
-        return executeQuery("SELECT * FROM facturas");
-    }
-
-    public List<Factura> findPendientesHasta(LocalDate fecha) {
-        return executeQuery("SELECT * FROM facturas WHERE pagada=0 AND vencimiento<='" + fecha + "'");
+        throw new UnsupportedOperationException(
+                "Las facturas no se eliminan físicamente."
+        );
     }
 
     @Override
@@ -100,9 +84,27 @@ public class FacturaStorage extends BaseStorage<Factura> {
                 rs.getDouble("total"),
                 MetodoPago.valueOf(rs.getString("metodo")),
                 rs.getInt("cuotas"),
-                LocalDate.parse(rs.getString("vencimiento")),
-                rs.getBoolean("pagada"),
-                rs.getString("fecha_pago") != null ? LocalDate.parse(rs.getString("fecha_pago")) : null
+                rs.getDate("vencimiento").toLocalDate(),
+                EstadoFactura.valueOf(rs.getString("estado")),
+                rs.getDate("fecha_pago") != null ? rs.getDate("fecha_pago").toLocalDate() : null
         );
+    }
+
+    public List<Factura> findPendientesHasta(LocalDate fecha) {
+        return executeQuery(
+                "SELECT * FROM facturas WHERE estado='PENDIENTE' AND vencimiento <= ?",
+                Date.valueOf(fecha)
+        );
+    }
+
+    @Override
+    public Factura findById(int id) {
+        List<Factura> lista = executeQuery("SELECT * FROM facturas WHERE id=?", id);
+        return lista.isEmpty() ? null : lista.get(0);
+    }
+
+    @Override
+    public List<Factura> findAll() {
+        return executeQuery("SELECT * FROM facturas");
     }
 }
