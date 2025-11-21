@@ -78,9 +78,15 @@ public class DialogCrearReserva extends JDialog {
         // = FECHAS =
         spDesde = new JSpinner(new SpinnerDateModel());
         spDesde.setEditor(new JSpinner.DateEditor(spDesde, "dd/MM/yyyy"));
+        spDesde.addChangeListener(e -> {
+            txtHabitacionId.setText("");
+        });
 
         spHasta = new JSpinner(new SpinnerDateModel());
         spHasta.setEditor(new JSpinner.DateEditor(spHasta, "dd/MM/yyyy"));
+        spHasta.addChangeListener(e -> {
+            txtHabitacionId.setText("");
+        });
 
         // = HABITACION =
         txtHabitacionId = new JTextField(6);
