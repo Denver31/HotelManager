@@ -6,10 +6,10 @@ import java.util.List;
 
 public abstract class BaseStorage<T> {
 
-    protected Connection connection;
-    protected String tableName;
+    protected final Connection connection;
+    protected final String tableName;
 
-    public BaseStorage(Connection connection, String tableName) {
+    protected BaseStorage(Connection connection, String tableName) {
         this.connection = connection;
         this.tableName = tableName;
     }
@@ -19,21 +19,44 @@ public abstract class BaseStorage<T> {
     public abstract void delete(int id);
     public abstract T findById(int id);
     public abstract List<T> findAll();
+    protected abstract T mapRow(ResultSet rs) throws SQLException;
 
-    /** Ejecuta una consulta genérica SELECT y devuelve un listado */
-    protected List<T> executeQuery(String sql) {
+    /**
+     * Ejecuta un SELECT parametrizado y convierte cada fila con mapRow().
+     */
+    protected List<T> executeQuery(String sql, Object... params) {
         List<T> resultados = new ArrayList<>();
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                resultados.add(mapRow(rs));
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            cargarParametros(ps, params);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    resultados.add(mapRow(rs));
+                }
             }
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error ejecutando consulta en " + tableName, e);
         }
+
         return resultados;
     }
 
-    /** Convierte una fila de ResultSet a un objeto del dominio */
-    protected abstract T mapRow(ResultSet rs) throws SQLException;
+    /**
+     * Aplica parámetros dinámicos a un PreparedStatement,
+     * manejando conversiones comunes (especialmente fechas).
+     */
+    private void cargarParametros(PreparedStatement ps, Object... params) throws SQLException {
+        for (int i = 0; i < params.length; i++) {
+            Object p = params[i];
+
+            if (p instanceof java.time.LocalDate ld) {
+                ps.setDate(i + 1, Date.valueOf(ld));
+            } else {
+                ps.setObject(i + 1, p);
+            }
+        }
+    }
 }

@@ -1,11 +1,9 @@
+
 import aplicacion.Sistema;
-import dominio.Factura.MetodoPago;
-import dominio.Reserva;
-import almacenamiento.DatabaseManager;
-import java.time.LocalDate;
-import validaciones.ValidacionException;
-import dominio.Habitacion;
-import aplicacion.Sistema;
+import aplicacion.dashboardUi.PanelControl;
+import aplicacion.dashboardUi.PanelControlPresenter;
+
+import javax.swing.*;
 
 public class Main {
 
@@ -13,22 +11,26 @@ public class Main {
 
         Sistema sistema = new Sistema();
 
-        sistema.listarTodasLasHabitaciones();
-        sistema.listarTodasLasReservasDebug();
+        SwingUtilities.invokeLater(() -> {
 
-        LocalDate desde = LocalDate.of(2025, 11, 7);
-        LocalDate hasta = LocalDate.of(2025, 11, 10);
+            PanelControl view = new PanelControl(sistema);
 
-        System.out.println("\n🔍 Habitaciones disponibles del " + desde + " al " + hasta + ":");
-        var disponibles = sistema.listarHabitacionesDisponibles(desde, hasta);
-        for (Habitacion h : disponibles) {
-            System.out.printf(" - ID: %d | %s%n", h.getId(), h.getNombre());
-        }
+            PanelControlPresenter presenter = new PanelControlPresenter(
+                    view,
+                    sistema.getReservaService(),
+                    sistema.getFacturaService(),
+                    sistema.getHabitacionService(),
+                    sistema.getHuespedService()
+            );
 
-        System.out.println("🔍 DEBUG RESERVAS COMPLETAS:");
-        sistema.listarTodasLasReservasDebug();
+            view.setPresenter(presenter);
 
-
-        System.out.println("\nTotal disponibles: " + disponibles.size());
+            JFrame frame = new JFrame("Hotel");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(1200, 800);
+            frame.setLocationRelativeTo(null);
+            frame.setContentPane(view);
+            frame.setVisible(true);
+        });
     }
 }

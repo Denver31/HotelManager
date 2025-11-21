@@ -1,7 +1,10 @@
 package dominio;
 
 import java.time.LocalDate;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.temporal.ChronoUnit;
+
+import validaciones.InputException;
+import validaciones.BusinessRuleException;
 
 public class Reserva {
 
@@ -21,19 +24,26 @@ public class Reserva {
     private LocalDate desde;
     private LocalDate hasta;
 
-    // Constructor principal (nueva reserva)
-    public Reserva(Habitacion habitacion, Huesped huesped, Factura factura, LocalDate desde, LocalDate hasta) {
+    // ============================================================
+    // Constructor para creación de Reserva (caso de uso "Crear reserva")
+    // ============================================================
+    public Reserva(Habitacion habitacion, Huesped huesped, Factura factura,
+                   LocalDate desde, LocalDate hasta) {
 
-        if (habitacion == null)
-            throw new IllegalArgumentException("La habitación no puede ser null.");
-        if (huesped == null)
-            throw new IllegalArgumentException("El huésped no puede ser null.");
-        if (factura == null)
-            throw new IllegalArgumentException("La factura no puede ser null.");
+        if (habitacion == null) throw new InputException("La habitación es obligatoria.");
+        if (huesped == null)    throw new InputException("El huésped es obligatorio.");
+
         if (desde == null || hasta == null)
-            throw new IllegalArgumentException("Las fechas no pueden ser null.");
+            throw new InputException("Las fechas son obligatorias.");
+
         if (hasta.isBefore(desde))
-            throw new IllegalArgumentException("La fecha de salida no puede ser anterior a la de entrada.");
+            throw new InputException("La fecha de salida no puede ser anterior a la fecha de entrada.");
+
+        if (!habitacion.estaActiva())
+            throw new BusinessRuleException("La habitación no está activa.");
+
+        if (!huesped.estaActivo())
+            throw new BusinessRuleException("El huésped no está activo.");
 
         this.habitacion = habitacion;
         this.huesped = huesped;
@@ -41,92 +51,85 @@ public class Reserva {
         this.desde = desde;
         this.hasta = hasta;
         this.estado = EstadoReserva.PENDIENTE;
-
-        habitacion.agregarReserva(this);
     }
 
-    // Constructor alternativo (para reconstrucción desde BD)
+    // ============================================================
+    // Constructor para reconstrucción desde la BD
+    // ============================================================
     public Reserva(int id, Habitacion habitacion, Huesped huesped, Factura factura,
                    LocalDate desde, LocalDate hasta, EstadoReserva estado) {
+
+        this(habitacion, huesped, factura, desde, hasta);
         this.id = id;
-        this.habitacion = habitacion;
-        this.huesped = huesped;
-        this.factura = factura;
-        this.desde = desde;
-        this.hasta = hasta;
         this.estado = estado;
     }
 
-    // === Getters y Setters ===
+    // ============================================================
+    // Getters
+    // ============================================================
     public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-
     public EstadoReserva getEstado() { return estado; }
-    public void setEstado(EstadoReserva estado) { this.estado = estado; }
-
+    public LocalDate getDesde() { return desde; }
+    public LocalDate getHasta() { return hasta; }
     public Habitacion getHabitacion() { return habitacion; }
     public Huesped getHuesped() { return huesped; }
     public Factura getFactura() { return factura; }
-    public LocalDate getDesde() { return desde; }
-    public LocalDate getHasta() { return hasta; }
 
-    // === Métodos de negocio ===
+    // Setter solo para persistencia
+    public void setId(int id) { this.id = id; }
+    public void setEstado(EstadoReserva estado) { this.estado = estado; }
 
-    /** Verifica si se solapa con un rango de fechas dado */
-    public boolean seSolapaCon(LocalDate desde, LocalDate hasta) {
-        if (desde == null || hasta == null)
-            throw new IllegalArgumentException("Las fechas no pueden ser null.");
-        return !(hasta.isBefore(this.desde) || desde.isAfter(this.hasta));
+    // ============================================================
+    // Reglas de disponibilidad
+    // ============================================================
+    public boolean seSolapaCon(LocalDate d, LocalDate h) {
+        if (d == null || h == null)
+            throw new InputException("Fechas inválidas para solapamiento.");
+
+        return !(h.isBefore(desde) || d.isAfter(hasta));
     }
 
-    /** Marca la reserva como activa (check-in) */
+    public boolean estaOperativa() {
+        return estado == EstadoReserva.PENDIENTE ||
+                estado == EstadoReserva.CONFIRMADA ||
+                estado == EstadoReserva.ACTIVA;
+    }
+
+    // ============================================================
+    // Reglas de negocio: transiciones de estado
+    // ============================================================
+
     public void hacerCheckIn() {
-        if (!factura.isPagada()) {
-            throw new validaciones.PagoRequeridoException("Debe pagar la factura antes del check-in.");
-        }
-        if (estado != EstadoReserva.CONFIRMADA && estado != EstadoReserva.PENDIENTE)
-            throw new IllegalStateException("No se puede hacer check-in en una reserva no confirmada.");
+        if (!estaConfirmada())
+            throw new BusinessRuleException("Solo se puede hacer check-in sobre reservas confirmadas.");
         this.estado = EstadoReserva.ACTIVA;
     }
 
-    /** Marca la reserva como finalizada (check-out) */
     public void hacerCheckOut() {
-        if (estado != EstadoReserva.ACTIVA)
-            throw new IllegalStateException("Solo se puede hacer check-out de una reserva activa.");
+        if (!estaActiva())
+            throw new BusinessRuleException("Solo reservas activas pueden finalizarse.");
         this.estado = EstadoReserva.FINALIZADA;
     }
 
-    /** Cancela la reserva si aún no se realizó */
     public void cancelar() {
-        if (estado == EstadoReserva.ACTIVA)
-            throw new IllegalStateException("No se puede cancelar una reserva activa.");
+        if (!estaPendiente() && !estaConfirmada())
+            throw new BusinessRuleException("Solo reservas pendientes o confirmadas pueden cancelarse.");
         this.estado = EstadoReserva.CANCELADA;
     }
 
-    /** Calcula el total estimado de la estadía */
+    // Métodos de estado
+    public boolean estaPendiente()   { return estado == EstadoReserva.PENDIENTE; }
+    public boolean estaConfirmada()  { return estado == EstadoReserva.CONFIRMADA; }
+    public boolean estaActiva()      { return estado == EstadoReserva.ACTIVA; }
+    public boolean estaFinalizada()  { return estado == EstadoReserva.FINALIZADA; }
+    public boolean estaCancelada()   { return estado == EstadoReserva.CANCELADA; }
+
+    // ============================================================
+    // Cálculo de total
+    // ============================================================
     public double calcularTotal() {
-        long dias = java.time.temporal.ChronoUnit.DAYS.between(desde, hasta);
+        long dias = ChronoUnit.DAYS.between(desde, hasta);
+        if (dias <= 0) dias = 1;
         return habitacion.getPrecio() * dias;
     }
-
-    @Override
-    public String toString() {
-        return String.format("Reserva[id=%d, estado=%s, habitacion=%s, huesped=%s, desde=%s, hasta=%s]",
-                id, estado, habitacion.getNombre(), huesped.getNombreCompleto(), desde, hasta);
-    }
-
-    // ================= SETTERS (solo para reconstrucción interna) =================
-
-    public void setHabitacion(Habitacion habitacion) {
-        this.habitacion = habitacion;
-    }
-
-    public void setHuesped(Huesped huesped) {
-        this.huesped = huesped;
-    }
-
-    public void setFactura(Factura factura) {
-        this.factura = factura;
-    }
-
 }
