@@ -5,7 +5,9 @@ import java.awt.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.CompoundBorder;
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.Calendar;
 
 import dto.HuespedListadoDTO;
 
@@ -78,9 +80,28 @@ public class DialogCrearReserva extends JDialog {
         // = FECHAS =
         spDesde = new JSpinner(new SpinnerDateModel());
         spDesde.setEditor(new JSpinner.DateEditor(spDesde, "dd/MM/yyyy"));
+        spDesde.addChangeListener(e -> {
+            Date value = (Date) spDesde.getValue();
+            Date today = new Date();
+
+            if (isBeforeDate(value, today)) {
+                spDesde.setValue(today);
+            }
+
+            txtHabitacionId.setText("");
+        });
 
         spHasta = new JSpinner(new SpinnerDateModel());
         spHasta.setEditor(new JSpinner.DateEditor(spHasta, "dd/MM/yyyy"));
+        spHasta.addChangeListener(e -> {
+            Date value = (Date) spHasta.getValue();
+            Date today = new Date();
+
+            if (isBeforeDate(value, today)) {
+                spHasta.setValue(today);
+            }
+            txtHabitacionId.setText("");
+        });
 
         // = HABITACION =
         txtHabitacionId = new JTextField(6);
@@ -182,6 +203,24 @@ public class DialogCrearReserva extends JDialog {
         global.add(card, BorderLayout.CENTER);
 
         return global;
+    }
+
+    public static boolean isBeforeDate(Date d1, Date d2) {
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(d1);
+        c1.set(Calendar.HOUR_OF_DAY, 0);
+        c1.set(Calendar.MINUTE, 0);
+        c1.set(Calendar.SECOND, 0);
+        c1.set(Calendar.MILLISECOND, 0);
+
+        Calendar c2 = Calendar.getInstance();
+        c2.setTime(d2);
+        c2.set(Calendar.HOUR_OF_DAY, 0);
+        c2.set(Calendar.MINUTE, 0);
+        c2.set(Calendar.SECOND, 0);
+        c2.set(Calendar.MILLISECOND, 0);
+
+        return c1.getTime().before(c2.getTime());
     }
 
     private void addRow(JPanel panel, GridBagConstraints gbc,

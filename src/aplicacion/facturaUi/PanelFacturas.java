@@ -232,6 +232,7 @@ public class PanelFacturas extends JPanel {
         DetalleFacturaPresenter dp = new DetalleFacturaPresenter(
                 dialog,
                 presenter.getFacturaService(),
+                presenter.getReservaService(),
                 () -> presenter.cargarFacturas() // REFRESCA TABLA
         );
 
