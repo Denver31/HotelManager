@@ -263,6 +263,20 @@ public class ReservaService {
                 .filter(Reserva::estaOperativa)
                 .anyMatch(r -> r.getHuesped().getId() == idHuesped);
     }
+
+    /**
+     * Cuando una factura se paga, si la reserva asociada estaba pendiente,
+     * debe pasar a CONFIRMADA.
+     */
+    public void confirmarReservasConFactura(int idFactura) {
+        Reserva r = storage.findByFacturaId(idFactura);
+        if (r == null) return;
+
+        if (r.estaPendiente()) {
+            r.setEstado(Reserva.EstadoReserva.CONFIRMADA);
+            storage.update(r);
+        }
+    }
 }
 
 

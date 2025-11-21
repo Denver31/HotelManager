@@ -3,21 +3,27 @@ package aplicacion.facturaUi.presenter;
 import aplicacion.facturaUi.PanelFacturas;
 import dto.FacturaListadoDTO;
 import servicios.FacturaService;
+import servicios.ReservaService;
 
 import java.util.List;
 
 public class FacturasPresenter {
 
     private final FacturaService facturaService;
+    private final ReservaService reservaService;
     private final PanelFacturas view;
 
     public FacturaService getFacturaService() {
         return facturaService;
     }
+    public ReservaService getReservaService() {
+        return reservaService;
+    }
 
-    public FacturasPresenter(PanelFacturas view, FacturaService facturaService) {
+    public FacturasPresenter(PanelFacturas view, FacturaService facturaService, ReservaService reservaService) {
         this.view = view;
         this.facturaService = facturaService;
+        this.reservaService = reservaService;
     }
 
     // ============================================================

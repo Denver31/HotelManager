@@ -79,7 +79,7 @@ public class PanelControlPresenter {
 
     public void abrirFacturas() {
         PanelFacturas panel = new PanelFacturas();
-        FacturasPresenter p = new FacturasPresenter(panel, facturaService);
+        FacturasPresenter p = new FacturasPresenter(panel, facturaService, reservaService);
         panel.setPresenter(p);
         p.cargarFacturas();
         view.abrirVentana(panel, "Facturas");
