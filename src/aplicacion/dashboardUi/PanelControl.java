@@ -147,8 +147,14 @@ public class PanelControl extends JPanel {
         JPanel card = buildCard("Próximas entradas");
 
         tablaEntradas = new JTable(new DefaultTableModel(
-                new Object[][]{}, new String[]{"Fecha", "ID Reserva", "Huésped", "Hab."}
-        ));
+                new Object[][]{},
+                new String[]{"Fecha", "ID Reserva", "Huésped", "Hab."}
+        )) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         card.add(new JScrollPane(tablaEntradas), BorderLayout.CENTER);
         return card;
@@ -158,8 +164,14 @@ public class PanelControl extends JPanel {
         JPanel card = buildCard("Próximas salidas");
 
         tablaSalidas = new JTable(new DefaultTableModel(
-                new Object[][]{}, new String[]{"Fecha", "ID Reserva", "Huésped", "Hab."}
-        ));
+                new Object[][]{},
+                new String[]{"Fecha", "ID Reserva", "Huésped", "Hab."}
+        )) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         card.add(new JScrollPane(tablaSalidas), BorderLayout.CENTER);
         return card;
@@ -169,8 +181,15 @@ public class PanelControl extends JPanel {
         JPanel card = buildCard("Reservas pendientes de cobro");
 
         tablaPendientes = new JTable(new DefaultTableModel(
-                new Object[][]{}, new String[]{"ID Reserva", "Huésped", "Factura", "Monto"}
-        ));
+                new Object[][]{},
+                new String[]{"ID Reserva", "Huésped", "Factura", "Monto"}
+        )) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
 
         card.add(new JScrollPane(tablaPendientes), BorderLayout.CENTER);
         return card;
@@ -180,8 +199,14 @@ public class PanelControl extends JPanel {
         JPanel card = buildCard("Facturas vencidas");
 
         tablaVencidas = new JTable(new DefaultTableModel(
-                new Object[][]{}, new String[]{"ID Reserva", "Huésped", "Factura", "Monto"}
-        ));
+                new Object[][]{},
+                new String[]{"ID Reserva", "Huésped", "Factura", "Monto"}
+        )) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         card.add(new JScrollPane(tablaVencidas), BorderLayout.CENTER);
         return card;
@@ -228,51 +253,8 @@ public class PanelControl extends JPanel {
     }
 
     // ============================================================
-    // MÉTODOS PARA ABRIR PANELES (CORRECTOS)
+    // MÉTODO PARA ABRIR PANELES
     // ============================================================
-    private void abrirReservas() {
-        PanelReservas panel = new PanelReservas();
-        ReservasPresenter presenter =
-                new ReservasPresenter(panel, sistema.reservaService,  sistema.huespedService, sistema.habitacionService, sistema.facturaService);
-
-        panel.setPresenter(presenter);
-        presenter.cargarListado();
-
-        abrirVentana(panel, "Reservas");
-    }
-
-    private void abrirHabitaciones() {
-        PanelHabitaciones panel = new PanelHabitaciones();
-        HabitacionesPresenter presenter =
-                new HabitacionesPresenter(sistema.habitacionService, panel);
-
-        panel.setPresenter(presenter);
-        presenter.cargarListado();
-
-        abrirVentana(panel, "Habitaciones");
-    }
-
-    private void abrirHuespedes() {
-        PanelHuespedes panel = new PanelHuespedes();
-        HuespedesPresenter presenter =
-                new HuespedesPresenter(sistema.huespedService, panel);
-
-        panel.setPresenter(presenter);
-        presenter.cargarListado();
-
-        abrirVentana(panel, "Huéspedes");
-    }
-
-    private void abrirFacturas() {
-        PanelFacturas panel = new PanelFacturas();
-        FacturasPresenter presenter =
-                new FacturasPresenter(panel, sistema.facturaService);
-
-        panel.setPresenter(presenter);
-        presenter.cargarFacturas();
-
-        abrirVentana(panel, "Facturas");
-    }
 
     public void abrirVentana(JPanel panel, String titulo) {
         JFrame f = new JFrame(titulo);

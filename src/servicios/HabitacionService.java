@@ -1,16 +1,18 @@
 package servicios;
 
 import almacenamiento.HabitacionStorage;
+
 import dominio.Habitacion;
-import dominio.Reserva;
+
 import validaciones.*;
+
+import dto.CrearHabitacionDTO;
+import dto.HabitacionDetalleDTO;
+import dto.HabitacionListadoDTO;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-import dto.CrearHabitacionDTO;
-import dto.HabitacionDetalleDTO;
-import dto.HabitacionListadoDTO;
 
 public class HabitacionService {
 
@@ -25,7 +27,7 @@ public class HabitacionService {
     }
 
     // ============================================================
-    // Helpers internos
+    // Helpers internos necesarios
     // ============================================================
     private Habitacion getHabitacionOrThrow(int id) {
         if (id <= 0) throw new InputException("ID de habitación inválido.");
@@ -65,11 +67,8 @@ public class HabitacionService {
     }
 
     // ============================================================
-    // Crear habitación (DTO → dominio)
+    // Métodos permitidos (usados por presenters)
     // ============================================================
-    /**
-     * Crea una nueva habitación y devuelve el ID generado.
-     */
     public int crearHabitacion(CrearHabitacionDTO dto) {
         if (dto == null)
             throw new InputException("Datos de habitación inválidos.");
@@ -82,32 +81,22 @@ public class HabitacionService {
                 dto.capacidad()
         );
 
-        storage.save(h); // setea el ID internamente
+        storage.save(h);
         return h.getId();
     }
 
-    // ============================================================
-    // Obtener detalle (dominio → DTO)
-    // ============================================================
     public HabitacionDetalleDTO obtenerDetalle(int id) {
         Habitacion h = getHabitacionOrThrow(id);
         return toDetalleDTO(h);
     }
 
-    // ============================================================
-    // Listado (dominio → DTO)
-    // ============================================================
     public List<HabitacionListadoDTO> obtenerListado() {
         return storage.findAll().stream()
                 .map(this::toListadoDTO)
                 .collect(Collectors.toList());
     }
 
-    // ============================================================
-    // Disponibles (dominio → DTO)
-    // ============================================================
     public List<HabitacionListadoDTO> buscarDisponibles(LocalDate desde, LocalDate hasta) {
-
         validarRangoFechas(desde, hasta);
 
         List<Habitacion> disponibles = storage.findTodasActivas().stream()
@@ -124,17 +113,12 @@ public class HabitacionService {
             throw new InputException("ID de habitación inválido.");
 
         Habitacion h = storage.findById(id);
-
         if (h == null)
             throw new BusinessRuleException("Habitación no encontrada.");
 
         return h;
     }
 
-
-    // ============================================================
-    // Baja / alta (devuelven DTO actualizado)
-    // ============================================================
     public HabitacionDetalleDTO darDeBaja(int id) {
         Habitacion h = getHabitacionOrThrow(id);
 
@@ -155,4 +139,9 @@ public class HabitacionService {
 
         return toDetalleDTO(h);
     }
+
+    // ============================================================
+    // ELIMINADOS
+    // ============================================================
+    // [ELIMINADO] Antes aquí existía: buscarPorTexto(...)  // ← NO existe hoy
 }

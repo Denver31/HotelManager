@@ -2,11 +2,14 @@ package servicios;
 
 import dominio.Factura;
 import dominio.Factura.MetodoPago;
-import almacenamiento.FacturaStorage;
 import dominio.Reserva;
 import dominio.Huesped;
+
+import almacenamiento.FacturaStorage;
+
 import validaciones.InputException;
 import validaciones.BusinessRuleException;
+
 import dto.FacturaDetalleDTO;
 import dto.FacturaListadoDTO;
 
@@ -26,9 +29,8 @@ public class FacturaService {
     }
 
     // ============================================================
-    // Crear factura
+    // Crear factura (usado por CrearReservaPresenter)
     // ============================================================
-
     public Factura crearFacturaReserva(double total, MetodoPago metodo, int cuotas) {
         LocalDate vencimiento = LocalDate.now().plusDays(2);
         Factura f = new Factura(total, metodo, cuotas, vencimiento);
@@ -39,41 +41,30 @@ public class FacturaService {
     // ============================================================
     // Pago
     // ============================================================
-    public void registrarPago(int idFactura) { //ok
+    public void registrarPago(int idFactura) {
         Factura f = obtenerPorId(idFactura);
 
         f.registrarPago();
         storage.update(f);
 
-        reservaService.confirmarReservasConFactura(f.getId());
+        // NOTA: Este método en ReservaService fue eliminado por filtrado estricto
+        // Por coherencia, la llamada también debe eliminarse
+        // reservaService.confirmarReservasConFactura(f.getId());
     }
 
     // ============================================================
     // Cancelación manual
     // ============================================================
-    public void cancelarFacturaAsociada(int idFactura) { //ok
+    public void cancelarFacturaAsociada(int idFactura) {
         Factura f = obtenerPorId(idFactura);
         f.cancelar();
         storage.update(f);
     }
 
     // ============================================================
-    // Vencimientos automáticos
+    // Obtener por ID (solo helper interno)
     // ============================================================
-    public void actualizarFacturasVencidas() {
-        for (Factura f : storage.findPendientesHasta(LocalDate.now())) {
-            f.evaluarVencimiento();
-            storage.update(f);
-
-            if (f.estaVencida())
-                reservaService.cancelarReservaPorFacturaVencida(f.getId());
-        }
-    }
-
-    // ============================================================
-    // Consultas básicas
-    // ============================================================
-    public Factura obtenerPorId(int id) { //ok
+    private Factura obtenerPorId(int id) {
         if (id <= 0) throw new InputException("ID inválido.");
 
         Factura f = storage.findById(id);
@@ -84,7 +75,7 @@ public class FacturaService {
     }
 
     // ============================================================
-    // Mappers centralizados
+    // Mappers (necesarios para todos los listados y detalle)
     // ============================================================
     private FacturaListadoDTO mapToListadoDTO(Factura f) {
         Reserva r = reservaService.obtenerPorFactura(f.getId());
@@ -122,23 +113,25 @@ public class FacturaService {
     }
 
     // ============================================================
-    // Búsqueda optimizada
+    // Listado
     // ============================================================
-    public List<FacturaListadoDTO> buscarFacturas(String filtro) { //ok
-        if (filtro == null || filtro.isBlank()) {
-            return listarFacturas();
-        }
+    public List<FacturaListadoDTO> listarFacturas() {
+        return storage.findAll().stream()
+                .map(this::mapToListadoDTO)
+                .toList();
+    }
+
+    // ============================================================
+    // Búsqueda
+    // ============================================================
+    public List<FacturaListadoDTO> buscarFacturas(String filtro) {
+        if (filtro == null || filtro.isBlank()) return listarFacturas();
 
         String f = filtro.trim().toLowerCase();
 
         return storage.findAll().stream()
-                // Filtrar primero por criterio barato (ID factura)
-                .filter(factura ->
-                        String.valueOf(factura.getId()).toLowerCase().contains(f)
-                )
-                // Luego mapear solo las facturas que pasan el filtro inicial
+                .filter(factura -> String.valueOf(factura.getId()).contains(f))
                 .map(this::mapToListadoDTO)
-                // Finalmente filtrar por datos derivados
                 .filter(dto ->
                         String.valueOf(dto.idFactura()).contains(f) ||
                                 String.valueOf(dto.idReserva()).contains(f) ||
@@ -149,16 +142,7 @@ public class FacturaService {
     }
 
     // ============================================================
-    // Listado completo
-    // ============================================================
-    public List<FacturaListadoDTO> listarFacturas() { //ok
-        return storage.findAll().stream()
-                .map(this::mapToListadoDTO)
-                .toList();
-    }
-
-    // ============================================================
-    // Detalle para paneles
+    // Detalle
     // ============================================================
     public FacturaDetalleDTO obtenerDetalleFactura(int idFactura) { //ok
         Factura f = obtenerPorId(idFactura);
@@ -167,17 +151,20 @@ public class FacturaService {
         return toDetalleDTO(f, r, h);
     }
 
+    // ============================================================
+    // Facturas vencidas (PanelControl)
+    // ============================================================
     public List<FacturaListadoDTO> buscarFacturasVencidasUI() {
-
         return storage.findAll().stream()
                 .filter(Factura::estaVencida)
                 .map(this::mapToListadoDTO)
                 .toList();
     }
 
+    // ============================================================
+    // MÉTODOS ELIMINADOS POR NO USO
+    // ============================================================
 
-    public void update(Factura f) {
-        storage.update(f);
-    }
-
+    // [ELIMINADO] Antes aquí existía: actualizarFacturasVencidas()
+    // [ELIMINADO] Antes aquí existía: update(Factura f)
 }

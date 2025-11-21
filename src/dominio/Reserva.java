@@ -98,11 +98,6 @@ public class Reserva {
     // ============================================================
     // Reglas de negocio: transiciones de estado
     // ============================================================
-    public void confirmar() {
-        if (!estaPendiente())
-            throw new BusinessRuleException("Solo reservas pendientes pueden confirmarse.");
-        this.estado = EstadoReserva.CONFIRMADA;
-    }
 
     public void hacerCheckIn() {
         if (!estaConfirmada())

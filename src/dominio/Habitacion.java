@@ -84,34 +84,6 @@ public class Habitacion {
     }
 
     // ============================================================
-    // Modificaciones permitidas (solo si está activa)
-    // ============================================================
-    public void modificarDatos(String nombre, String descripcion, double precio,
-                               TipoHabitacion tipo, int capacidad) {
-
-        if (!estaActiva())
-            throw new BusinessRuleException("No se puede modificar una habitación dada de baja.");
-
-        if (nombre == null || nombre.isBlank())
-            throw new InputException("El nombre es obligatorio.");
-
-        if (precio <= 0)
-            throw new InputException("El precio debe ser mayor que cero.");
-
-        if (tipo == null)
-            throw new InputException("El tipo es obligatorio.");
-
-        if (capacidad <= 0)
-            throw new InputException("La capacidad debe ser mayor que cero.");
-
-        this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.precio = precio;
-        this.tipo = tipo;
-        this.capacidad = capacidad;
-    }
-
-    // ============================================================
     // Reglas de negocio: cambiar estado
     // ============================================================
     public void darDeBaja() {
