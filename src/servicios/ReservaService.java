@@ -58,7 +58,7 @@ public class ReservaService {
     // MÉTODOS PERMITIDOS — usados por presenters
     // ============================================================
 
-    // ✔ Usado por CrearReservaPresenter
+    // Usado por CrearReservaPresenter
     public ReservaDetalleDTO crearReservaDesdeUI(
             CrearReservaDTO dto,
             HuespedService huespedService,
@@ -89,18 +89,18 @@ public class ReservaService {
         return convertirADetalleDTO(real);
     }
 
-    // ✔ Usado por ReservasPresenter
+    // Usado por ReservasPresenter
     public List<Reserva> listarTodas() {
         return storage.findAll();
     }
 
-    // ✔ Usado por DetalleReservaPresenter
+    // Usado por DetalleReservaPresenter
     public ReservaDetalleDTO obtenerDetalle(int id) {
         Reserva r = getReservaOrThrow(id);
         return convertirADetalleDTO(r);
     }
 
-    // ✔ Usado por DetalleReservaPresenter
+    // Usado por DetalleReservaPresenter
     public ReservaDetalleDTO hacerCheckIn(int idReserva) {
         Reserva r = getReservaOrThrow(idReserva);
 
@@ -114,7 +114,7 @@ public class ReservaService {
         return convertirADetalleDTO(r);
     }
 
-    // ✔ Usado por DetalleReservaPresenter
+    // Usado por DetalleReservaPresenter
     public ReservaDetalleDTO hacerCheckOut(int idReserva) {
         Reserva r = getReservaOrThrow(idReserva);
         r.hacerCheckOut();
@@ -122,7 +122,7 @@ public class ReservaService {
         return convertirADetalleDTO(r);
     }
 
-    // ✔ Usado por DetalleReservaPresenter
+    // Usado por DetalleReservaPresenter
     public ReservaDetalleDTO cancelar(int idReserva) {
         Reserva r = getReservaOrThrow(idReserva);
 
@@ -139,7 +139,7 @@ public class ReservaService {
     // Dashboard (PanelControlPresenter)
     // ============================================================
 
-    // ✔ Usado
+    // Usado
     public int contarHabitacionesTotales() {
         return (int) storage.findAll().stream()
                 .map(Reserva::getHabitacion)
@@ -148,7 +148,7 @@ public class ReservaService {
                 .count();
     }
 
-    // ✔ Usado
+    // Usado
     public int contarHabitacionesOcupadasHoy() {
         LocalDate hoy = LocalDate.now();
 
@@ -160,7 +160,7 @@ public class ReservaService {
                 .count();
     }
 
-    // ✔ Usado
+    // Usado
     public List<ReservaDashboardDTO> listarEntradasUI() {
         LocalDate hoy = LocalDate.now();
         LocalDate futuro = hoy.plusDays(7);
@@ -177,7 +177,7 @@ public class ReservaService {
                 .toList();
     }
 
-    // ✔ Usado
+    // Usado
     public List<ReservaDashboardDTO> listarSalidasUI() {
         LocalDate hoy = LocalDate.now();
         LocalDate futuro = hoy.plusDays(7);
@@ -194,7 +194,7 @@ public class ReservaService {
                 .toList();
     }
 
-    // ✔ Usado
+    // Usado
     public List<ReservaDashboardDTO> listarPendientesDeCobroUI() {
         return storage.findAll().stream()
                 .filter(r -> r.getFactura() != null)

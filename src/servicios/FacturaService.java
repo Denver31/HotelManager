@@ -46,10 +46,6 @@ public class FacturaService {
 
         f.registrarPago();
         storage.update(f);
-
-        // NOTA: Este método en ReservaService fue eliminado por filtrado estricto
-        // Por coherencia, la llamada también debe eliminarse
-        // reservaService.confirmarReservasConFactura(f.getId());
     }
 
     // ============================================================
