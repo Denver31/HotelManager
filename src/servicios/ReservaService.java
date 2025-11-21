@@ -139,7 +139,6 @@ public class ReservaService {
     // Dashboard (PanelControlPresenter)
     // ============================================================
 
-    // Usado
     public int contarHabitacionesTotales() {
         return (int) storage.findAll().stream()
                 .map(Reserva::getHabitacion)
@@ -148,7 +147,6 @@ public class ReservaService {
                 .count();
     }
 
-    // Usado
     public int contarHabitacionesOcupadasHoy() {
         LocalDate hoy = LocalDate.now();
 
@@ -160,7 +158,6 @@ public class ReservaService {
                 .count();
     }
 
-    // Usado
     public List<ReservaDashboardDTO> listarEntradasUI() {
         LocalDate hoy = LocalDate.now();
         LocalDate futuro = hoy.plusDays(7);
@@ -177,7 +174,6 @@ public class ReservaService {
                 .toList();
     }
 
-    // Usado
     public List<ReservaDashboardDTO> listarSalidasUI() {
         LocalDate hoy = LocalDate.now();
         LocalDate futuro = hoy.plusDays(7);
@@ -194,7 +190,6 @@ public class ReservaService {
                 .toList();
     }
 
-    // Usado
     public List<ReservaDashboardDTO> listarPendientesDeCobroUI() {
         return storage.findAll().stream()
                 .filter(r -> r.getFactura() != null)

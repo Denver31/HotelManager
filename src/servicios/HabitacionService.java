@@ -139,9 +139,4 @@ public class HabitacionService {
 
         return toDetalleDTO(h);
     }
-
-    // ============================================================
-    // ELIMINADOS
-    // ============================================================
-    // [ELIMINADO] Antes aquí existía: buscarPorTexto(...)  // ← NO existe hoy
 }

@@ -156,11 +156,4 @@ public class FacturaService {
                 .map(this::mapToListadoDTO)
                 .toList();
     }
-
-    // ============================================================
-    // MÉTODOS ELIMINADOS POR NO USO
-    // ============================================================
-
-    // [ELIMINADO] Antes aquí existía: actualizarFacturasVencidas()
-    // [ELIMINADO] Antes aquí existía: update(Factura f)
 }
