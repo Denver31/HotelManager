@@ -1,21 +1,31 @@
 package aplicacion.reservaUi;
 
+import dto.reserva.ReservaDetalleDTO;
+
+import aplicacion.reservaUi.presenter.DetalleReservaPresenter;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class DialogDetalleReserva extends JDialog {
 
-    // Estilos suaves y fáciles de editar
     private static final Color BG = new Color(245, 247, 250);
     private static final Color ACCENT = new Color(0, 120, 215);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font SECTION_FONT = new Font("Segoe UI", Font.BOLD, 14);
 
-    // Labels (datos)
+    // MVP
+    private DetalleReservaPresenter presenter;
+
+    public void setPresenter(DetalleReservaPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // Labels
     private JLabel lblEstado, lblIngreso, lblEgreso;
-    private JLabel lblHuespedId, lblNombre, lblApellido;
+    private JLabel lblHuespedId, lblNombreCompleto;
     private JLabel lblHabId, lblHabNombre, lblPrecioNoche;
     private JLabel lblTotal, lblFacturaId;
 
@@ -36,37 +46,29 @@ public class DialogDetalleReserva extends JDialog {
         initComponents();
         setContentPane(buildMainPanel());
         initListeners();
-
-        cargarMockDatos(); // luego se reemplaza por controller.cargar()
     }
 
     private void initComponents() {
-        // Datos reserva
+
         lblEstado = createValueLabel();
         lblIngreso = createValueLabel();
         lblEgreso = createValueLabel();
 
-        // Datos huésped
         lblHuespedId = createValueLabel();
-        lblNombre = createValueLabel();
-        lblApellido = createValueLabel();
+        lblNombreCompleto = createValueLabel();
 
-        // Datos habitación
         lblHabId = createValueLabel();
         lblHabNombre = createValueLabel();
         lblPrecioNoche = createValueLabel();
 
-        // Facturación
         lblTotal = createValueLabel();
         lblFacturaId = createValueLabel();
 
-        // Botones
         btnCheckIn = createButton("CHECK-IN", new Color(0, 120, 215));
         btnCheckOut = createButton("CHECK-OUT", new Color(0, 160, 80));
         btnCancelar = createButton("CANCELAR", new Color(180, 40, 40));
     }
 
-    // ==== UI PRINCIPAL ====
     private JPanel buildMainPanel() {
 
         JPanel global = new JPanel();
@@ -74,7 +76,6 @@ public class DialogDetalleReserva extends JDialog {
         global.setBackground(BG);
         global.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Título (alineado a la izquierda)
         JLabel titulo = new JLabel("Detalle de Reserva #" + idReserva);
         titulo.setFont(TITLE_FONT);
         titulo.setForeground(ACCENT);
@@ -82,34 +83,32 @@ public class DialogDetalleReserva extends JDialog {
         titulo.setBorder(new EmptyBorder(0, 0, 20, 0));
         global.add(titulo);
 
-        // Panel central con contenido centrado pero texto a la izquierda
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setAlignmentX(Component.CENTER_ALIGNMENT);
         content.setBackground(Color.WHITE);
         content.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // ========== SECCIÓN RESERVA ==========
+        // -------- RESERVA --------
         content.add(sectionTitle("--- Reserva ---"));
         content.add(line("Estado: ", lblEstado));
         content.add(line("Ingreso: ", lblIngreso));
         content.add(line("Egreso: ", lblEgreso));
 
-        // ========== SECCIÓN HUESPED ==========
+        // -------- HUESPED --------
         content.add(Box.createVerticalStrut(15));
         content.add(sectionTitle("--- Huésped ---"));
         content.add(line("Huésped ID: ", lblHuespedId));
-        content.add(line("Nombre: ", lblNombre));
-        content.add(line("Apellido: ", lblApellido));
+        content.add(line("Nombre completo: ", lblNombreCompleto));
 
-        // ========== SECCIÓN HABITACIÓN ==========
+        // -------- HABITACION --------
         content.add(Box.createVerticalStrut(15));
         content.add(sectionTitle("--- Habitación ---"));
         content.add(line("Habitación ID: ", lblHabId));
         content.add(line("Nombre: ", lblHabNombre));
         content.add(line("Precio por noche: ", lblPrecioNoche));
 
-        // ========== SECCIÓN FACTURACIÓN ==========
+        // -------- FACTURACION --------
         content.add(Box.createVerticalStrut(15));
         content.add(sectionTitle("--- Facturación ---"));
         content.add(line("Total: ", lblTotal));
@@ -117,7 +116,7 @@ public class DialogDetalleReserva extends JDialog {
 
         global.add(content);
 
-        // ==== BOTONES ABAJO ====
+        // -------- BOTONES --------
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         botones.setOpaque(false);
 
@@ -131,7 +130,7 @@ public class DialogDetalleReserva extends JDialog {
         return global;
     }
 
-    // ==== UTILIDADES ====
+    // === Helpers UI ===
     private JLabel createValueLabel() {
         JLabel lbl = new JLabel("-");
         lbl.setFont(LABEL_FONT);
@@ -169,58 +168,65 @@ public class DialogDetalleReserva extends JDialog {
         return p;
     }
 
-    // ==== LISTENERS ====
+    // === Listeners delegados a Presenter ===
     private void initListeners() {
 
         btnCheckIn.addActionListener(e -> {
-            if (confirm("¿Confirmar check-in?")) {
-                JOptionPane.showMessageDialog(this, "Check-in realizado.");
-            }
+            if (presenter != null) presenter.onCheckIn();
         });
 
         btnCheckOut.addActionListener(e -> {
-            if (confirm("¿Confirmar check-out?")) {
-                JOptionPane.showMessageDialog(this, "Check-out realizado.");
-            }
+            if (presenter != null) presenter.onCheckOut();
         });
 
         btnCancelar.addActionListener(e -> {
-            if (confirm("¿Cancelar esta reserva?")) {
-                JOptionPane.showMessageDialog(this, "Reserva cancelada.");
-            }
+            if (presenter != null) presenter.onCancelar();
         });
     }
 
-    private boolean confirm(String msg) {
-        return JOptionPane.showConfirmDialog(this, msg, "Confirmar",
-                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    // === Métodos usados por el Presenter ===
+    public void mostrarDatos(ReservaDetalleDTO dto) {
+        lblEstado.setText(dto.estado());
+        lblIngreso.setText(dto.desde().toString());
+        lblEgreso.setText(dto.hasta().toString());
+
+        lblHuespedId.setText(String.valueOf(dto.idHuesped()));
+        lblNombreCompleto.setText(dto.nombreCompletoHuesped());
+
+        lblHabId.setText(String.valueOf(dto.idHabitacion()));
+        lblHabNombre.setText(dto.nombreHabitacion());
+        lblPrecioNoche.setText("$" + dto.totalFactura() / calcularNoches(dto));
+
+        lblTotal.setText("$" + dto.totalFactura());
+        lblFacturaId.setText(String.valueOf(dto.idFactura()));
+
+        setBotonesSegunEstado(dto.estado());
     }
 
-    // === MOCK HASTA TENER CONTROLLER ===
-    private void cargarMockDatos() {
-
-        lblEstado.setText("CONFIRMADA");
-        lblIngreso.setText("2025-11-10");
-        lblEgreso.setText("2025-11-15");
-
-        lblHuespedId.setText("55");
-        lblNombre.setText("Juan");
-        lblApellido.setText("Pérez");
-
-        lblHabId.setText("7");
-        lblHabNombre.setText("Doble 7");
-        lblPrecioNoche.setText("$10.000");
-
-        lblTotal.setText("$50.000");
-        lblFacturaId.setText("215");
-
-        // Habilitar botones según estado MOCK
-        actualizarBotones("CONFIRMADA");
+    private long calcularNoches(ReservaDetalleDTO dto) {
+        return java.time.temporal.ChronoUnit.DAYS.between(dto.desde(), dto.hasta());
     }
 
-    private void actualizarBotones(String estado) {
+    public void actualizarEstado(String nuevoEstado) {
+        lblEstado.setText(nuevoEstado);
+        setBotonesSegunEstado(nuevoEstado);
+    }
+
+    public void setBotonesSegunEstado(String estado) {
         btnCheckIn.setEnabled(estado.equals("PENDIENTE") || estado.equals("CONFIRMADA"));
         btnCheckOut.setEnabled(estado.equals("ACTIVA"));
         btnCancelar.setEnabled(estado.equals("PENDIENTE") || estado.equals("CONFIRMADA"));
+    }
+
+    public void mostrarMensaje(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Información", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void mostrarError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void cerrar() {
+        dispose();
     }
 }

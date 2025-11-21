@@ -22,13 +22,15 @@ public class Factura {
     private final double total;
     private final MetodoPago metodo;
     private final int cuotas;
+
+    private final LocalDate fechaAlta;
     private final LocalDate vencimiento;
 
     private EstadoFactura estado;
     private LocalDate fechaPago;
 
     // ============================================================
-    // Constructor para facturas nuevas
+    // Constructor para facturas NUEVAS
     // ============================================================
     public Factura(double total, MetodoPago metodo, int cuotas, LocalDate vencimiento) {
 
@@ -46,6 +48,8 @@ public class Factura {
         this.total = total;
         this.metodo = metodo;
         this.cuotas = cuotas;
+
+        this.fechaAlta = LocalDate.now();
         this.vencimiento = vencimiento;
 
         this.estado = EstadoFactura.PENDIENTE;
@@ -53,14 +57,18 @@ public class Factura {
     }
 
     // ============================================================
-    // Constructor reconstrucción
+    // Constructor RECONSTRUCCIÓN (desde DB)
     // ============================================================
     public Factura(int id, double total, MetodoPago metodo, int cuotas,
-                   LocalDate vencimiento, EstadoFactura estado,
-                   LocalDate fechaPago) {
+                   LocalDate fechaAlta, LocalDate vencimiento,
+                   EstadoFactura estado, LocalDate fechaPago) {
 
-        this(total, metodo, cuotas, vencimiento);
         this.id = id;
+        this.total = total;
+        this.metodo = metodo;
+        this.cuotas = cuotas;
+        this.fechaAlta = fechaAlta;
+        this.vencimiento = vencimiento;
         this.estado = estado;
         this.fechaPago = fechaPago;
     }
@@ -74,6 +82,7 @@ public class Factura {
     public double getTotal() { return total; }
     public MetodoPago getMetodo() { return metodo; }
     public int getCuotas() { return cuotas; }
+    public LocalDate getFechaAlta() { return fechaAlta; }
     public LocalDate getVencimiento() { return vencimiento; }
     public EstadoFactura getEstado() { return estado; }
     public LocalDate getFechaPago() { return fechaPago; }
@@ -84,7 +93,7 @@ public class Factura {
     public boolean estaVencida() { return estado == EstadoFactura.VENCIDA; }
 
     // ============================================================
-    // Lógica de negocio
+    // Reglas de negocio
     // ============================================================
     public void registrarPago() {
         if (!estaPendiente())
@@ -96,8 +105,7 @@ public class Factura {
 
     public void cancelar() {
         if (estaPagada())
-            throw new BusinessRuleException("No se puede cancelar una factura ya pagada.");
-
+            throw new BusinessRuleException("No se puede cancelar una factura pagada.");
         this.estado = EstadoFactura.CANCELADA;
     }
 

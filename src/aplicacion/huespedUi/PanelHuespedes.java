@@ -1,5 +1,8 @@
 package aplicacion.huespedUi;
 
+import aplicacion.huespedUi.presenter.HuespedesPresenter;
+import dto.HuespedListadoDTO;
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -10,11 +13,20 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.SwingUtilities;
+
+import almacenamiento.HuespedStorage;
+import servicios.HuespedService;
+import servicios.ReservaService;
+import almacenamiento.DatabaseManager;
+import almacenamiento.HabitacionStorage;
+import almacenamiento.FacturaStorage;
+import almacenamiento.ReservaStorage;
+import java.sql.Connection;
+
 
 public class PanelHuespedes extends JPanel {
 
-    // Estilos (mismos que PanelReservas / PanelHabitaciones)
+    // Estilos
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
@@ -22,12 +34,21 @@ public class PanelHuespedes extends JPanel {
     private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
+    // ============================================================
+    // MVP
+    // ============================================================
+    private HuespedesPresenter presenter;
+
+    public void setPresenter(HuespedesPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // ============================================================
+
     private JTable tablaHuespedes;
     private HuespedesTableModel huespedesTableModel;
 
-    // Búsqueda
     private JTextField txtBuscar;
-    // Botones
     private JButton btnBuscar;
     private JButton btnLimpiar;
     private JButton btnNuevoHuesped;
@@ -41,7 +62,6 @@ public class PanelHuespedes extends JPanel {
         initComponents();
         add(buildMainPanel(), BorderLayout.CENTER);
         initListeners();
-        cargarHuespedesDummy();
     }
 
     private void initComponents() {
@@ -158,7 +178,9 @@ public class PanelHuespedes extends JPanel {
 
     private void initListeners() {
 
-        // Doble click → abrir detalle
+        // ============================================================
+        // DOBLE CLICK → Presenter.onSeleccionar(id)
+        // ============================================================
         tablaHuespedes.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
 
@@ -169,50 +191,73 @@ public class PanelHuespedes extends JPanel {
                     );
                     int id = (Integer) huespedesTableModel.getValueAt(row, 0);
 
-                    DialogDetalleHuesped dialog = new DialogDetalleHuesped(
-                            SwingUtilities.getWindowAncestor(PanelHuespedes.this),
-                            id
-                    );
-                    dialog.setLocationRelativeTo(PanelHuespedes.this);
-                    dialog.setVisible(true);
+                    if (presenter != null)
+                        presenter.onSeleccionar(id);
                 }
             }
         });
 
-        btnBuscar.addActionListener(e -> aplicarBusqueda());
-        btnLimpiar.addActionListener(e -> limpiarBusqueda());
+        // ============================================================
+        // BÚSQUEDA
+        // ============================================================
+        btnBuscar.addActionListener(e -> {
+            if (presenter != null)
+                presenter.onBuscar(getFiltro());
+        });
 
+        // ============================================================
+        // LIMPIAR
+        // ============================================================
+        btnLimpiar.addActionListener(e -> {
+            if (presenter != null)
+                presenter.onLimpiar();
+        });
+
+        // ============================================================
+        // NUEVO
+        // ============================================================
         btnNuevoHuesped.addActionListener(e -> {
-            DialogCrearHuesped dialog = new DialogCrearHuesped(
-                    SwingUtilities.getWindowAncestor(this)
-            );
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
+            if (presenter != null)
+                presenter.onNuevo();
         });
     }
 
-    private void aplicarBusqueda() {
-        String filtro = txtBuscar.getText().trim();
-        System.out.println("[BUSCAR HUESPED]: " + filtro);
-        // TODO: llamar a Controller / Sistema para filtrar por ID, nombre, apellido o DNI
+    // ============================================================
+    // MÉTODOS PARA EL PRESENTER (VIEW API)
+    // ============================================================
+    public String getFiltro() {
+        return txtBuscar.getText().trim();
     }
 
-    private void limpiarBusqueda() {
+    public void limpiarFiltro() {
         txtBuscar.setText("");
-        cargarHuespedesDummy();
     }
 
-    private void cargarHuespedesDummy() {
-        huespedesTableModel.setHuespedes(List.of(
-                new Object[]{1, "Juan", "Pérez", "30123456", "juan@example.com", "ACTIVO"},
-                new Object[]{2, "Ana", "Gómez", "28999888", "ana@example.com", "ACTIVO"},
-                new Object[]{3, "Carlos", "López", "31222333", "carlos@example.com", "BAJA"}
-        ));
+    public void mostrarListado(List<HuespedListadoDTO> lista) {
+
+        List<Object[]> rows = new ArrayList<>();
+
+        for (HuespedListadoDTO dto : lista) {
+            rows.add(new Object[]{
+                    dto.id(),
+                    dto.nombre(),
+                    dto.apellido(),
+                    dto.dni(),
+                    dto.email(),
+                    dto.estado()
+            });
+        }
+
+        huespedesTableModel.setHuespedes(rows);
     }
 
-    // --------------------
-    // Table Model
-    // --------------------
+    public Window getParentWindow() {
+        return SwingUtilities.getWindowAncestor(this);
+    }
+
+    // ============================================================
+    // TABLE MODEL
+    // ============================================================
     private static class HuespedesTableModel extends AbstractTableModel {
 
         private final String[] columnas = {
@@ -229,8 +274,8 @@ public class PanelHuespedes extends JPanel {
         @Override
         public Class<?> getColumnClass(int columnIndex) {
             return switch (columnIndex) {
-                case 0 -> Integer.class; // ID
-                case 3 -> String.class;  // DNI (como texto para no perder ceros)
+                case 0 -> Integer.class;
+                case 3 -> String.class;
                 default -> String.class;
             };
         }
@@ -241,15 +286,45 @@ public class PanelHuespedes extends JPanel {
         }
     }
 
-    // MAIN de prueba opcional
-    public static void main(String[] args) {
+    /* public static void main(String[] args) {
+
         SwingUtilities.invokeLater(() -> {
+
+            Connection conn = DatabaseManager.getConnection();
+
+            // =============================
+            // Storages
+            // =============================
+            HuespedStorage huespedStorage = new HuespedStorage(conn);
+            HabitacionStorage habitacionStorage = new HabitacionStorage(conn);
+            FacturaStorage facturaStorage = new FacturaStorage(conn);
+            ReservaStorage reservaStorage =
+                    new ReservaStorage(conn, habitacionStorage, huespedStorage, facturaStorage);
+
+            // =============================
+            // Services
+            // =============================
+            ReservaService reservaService = new ReservaService(reservaStorage);
+            HuespedService huespedService = new HuespedService(huespedStorage, reservaService);
+
+            // =============================
+            // UI + Presenter
+            // =============================
+            PanelHuespedes panel = new PanelHuespedes();
+            HuespedesPresenter presenter = new HuespedesPresenter(huespedService, panel);
+
+            panel.setPresenter(presenter);
+            presenter.cargarListado();
+
+            // =============================
+            // Frame
+            // =============================
             JFrame frame = new JFrame("Test Panel Huéspedes");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(1100, 700);
             frame.setLocationRelativeTo(null);
-            frame.setContentPane(new PanelHuespedes());
+            frame.setContentPane(panel);
             frame.setVisible(true);
         });
-    }
+    }*/
 }

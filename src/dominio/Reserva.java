@@ -32,7 +32,6 @@ public class Reserva {
 
         if (habitacion == null) throw new InputException("La habitación es obligatoria.");
         if (huesped == null)    throw new InputException("El huésped es obligatorio.");
-        if (factura == null)    throw new InputException("La factura es obligatoria.");
 
         if (desde == null || hasta == null)
             throw new InputException("Las fechas son obligatorias.");

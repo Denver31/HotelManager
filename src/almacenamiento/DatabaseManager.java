@@ -42,53 +42,62 @@ public class DatabaseManager {
     private static void inicializarEsquema() throws SQLException {
 
         String[] tablas = {
-                """
-            CREATE TABLE IF NOT EXISTS huespedes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dni TEXT NOT NULL UNIQUE,
-                nombre TEXT NOT NULL,
-                apellido TEXT NOT NULL,
-                email TEXT
-            );
-            """,
 
+                // HUESPEDES
                 """
-            CREATE TABLE IF NOT EXISTS habitaciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                descripcion TEXT,
-                precio REAL NOT NULL,
-                tipo TEXT NOT NULL,
-                capacidad INTEGER NOT NULL CHECK (capacidad > 0)
-            );
-            """,
+        CREATE TABLE IF NOT EXISTS huespedes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dni TEXT NOT NULL UNIQUE,
+            nombre TEXT NOT NULL,
+            apellido TEXT NOT NULL,
+            email TEXT,
+            estado TEXT NOT NULL DEFAULT 'ACTIVO'
+            CHECK (estado IN ('ACTIVO', 'BAJA'))
+         );
+        """,
 
+                // HABITACIONES
                 """
-            CREATE TABLE IF NOT EXISTS facturas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                total REAL NOT NULL,
-                pagada BOOLEAN NOT NULL DEFAULT 0,
-                fecha_pago DATE,
-                metodo TEXT NOT NULL,
-                cuotas INTEGER NOT NULL CHECK (cuotas > 0),
-                vencimiento DATE NOT NULL
-            );
-            """,
+        CREATE TABLE IF NOT EXISTS habitaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            precio REAL NOT NULL,
+            tipo TEXT NOT NULL,
+            capacidad INTEGER NOT NULL CHECK (capacidad > 0),
+            estado TEXT NOT NULL CHECK (estado IN ('ACTIVA','BAJA'))
+        );
+        """,
 
+                // FACTURAS
                 """
-            CREATE TABLE IF NOT EXISTS reservas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                habitacion_id INTEGER NOT NULL,
-                huesped_id INTEGER NOT NULL,
-                factura_id INTEGER NOT NULL,
-                desde DATE NOT NULL,
-                hasta DATE NOT NULL,
-                estado TEXT NOT NULL,
-                FOREIGN KEY (habitacion_id) REFERENCES habitaciones(id),
-                FOREIGN KEY (huesped_id) REFERENCES huespedes(id),
-                FOREIGN KEY (factura_id) REFERENCES facturas(id)
-            );
-            """
+        CREATE TABLE IF NOT EXISTS facturas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            total REAL NOT NULL,
+            metodo TEXT NOT NULL,
+            cuotas INTEGER NOT NULL,
+            fecha_alta DATE NOT NULL,
+            vencimiento DATE NOT NULL,
+            estado TEXT NOT NULL,
+            fecha_pago DATE
+        );
+        """,
+
+                // RESERVAS
+                """
+        CREATE TABLE IF NOT EXISTS reservas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            habitacion_id INTEGER NOT NULL,
+            huesped_id INTEGER NOT NULL,
+            factura_id INTEGER NOT NULL,
+            desde DATE NOT NULL,
+            hasta DATE NOT NULL,
+            estado TEXT NOT NULL,
+            FOREIGN KEY (habitacion_id) REFERENCES habitaciones(id),
+            FOREIGN KEY (huesped_id) REFERENCES huespedes(id),
+            FOREIGN KEY (factura_id) REFERENCES facturas(id)
+        );
+        """
         };
 
         try (Statement st = conn.createStatement()) {
@@ -97,6 +106,7 @@ public class DatabaseManager {
             }
         }
     }
+
 
     public static void closeConnection() {
         try {

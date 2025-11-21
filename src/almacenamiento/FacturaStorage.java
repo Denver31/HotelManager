@@ -17,8 +17,10 @@ public class FacturaStorage extends BaseStorage<Factura> {
 
     @Override
     public void save(Factura f) {
+
         String sql = """
-            INSERT INTO facturas (total, pagada, fecha_pago, metodo, cuotas, vencimiento, estado)
+            INSERT INTO facturas 
+            (total, metodo, cuotas, fecha_alta, vencimiento, estado, fecha_pago) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """;
 
@@ -26,12 +28,12 @@ public class FacturaStorage extends BaseStorage<Factura> {
                      connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setDouble(1, f.getTotal());
-            ps.setBoolean(2, f.estaPagada());
-            ps.setDate(3, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
-            ps.setString(4, f.getMetodo().name());
-            ps.setInt(5, f.getCuotas());
-            ps.setDate(6, Date.valueOf(f.getVencimiento()));
-            ps.setString(7, f.getEstado().name());
+            ps.setString(2, f.getMetodo().name());
+            ps.setInt(3, f.getCuotas());
+            ps.setDate(4, Date.valueOf(f.getFechaAlta()));
+            ps.setDate(5, Date.valueOf(f.getVencimiento()));
+            ps.setString(6, f.getEstado().name());
+            ps.setDate(7, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
 
             ps.executeUpdate();
 
@@ -46,21 +48,23 @@ public class FacturaStorage extends BaseStorage<Factura> {
 
     @Override
     public void update(Factura f) {
+
         String sql = """
             UPDATE facturas
-            SET total=?, pagada=?, fecha_pago=?, metodo=?, cuotas=?, vencimiento=?, estado=?
+            SET total=?, metodo=?, cuotas=?, fecha_alta=?, vencimiento=?, estado=?, fecha_pago=?
             WHERE id=?
         """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
             ps.setDouble(1, f.getTotal());
-            ps.setBoolean(2, f.estaPagada());
-            ps.setDate(3, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
-            ps.setString(4, f.getMetodo().name());
-            ps.setInt(5, f.getCuotas());
-            ps.setDate(6, Date.valueOf(f.getVencimiento()));
-            ps.setString(7, f.getEstado().name());
+            ps.setString(2, f.getMetodo().name());
+            ps.setInt(3, f.getCuotas());
+            ps.setDate(4, Date.valueOf(f.getFechaAlta()));
+            ps.setDate(5, Date.valueOf(f.getVencimiento()));
+            ps.setString(6, f.getEstado().name());
+            ps.setDate(7, f.getFechaPago() != null ? Date.valueOf(f.getFechaPago()) : null);
+
             ps.setInt(8, f.getId());
 
             ps.executeUpdate();
@@ -72,18 +76,18 @@ public class FacturaStorage extends BaseStorage<Factura> {
 
     @Override
     public void delete(int id) {
-        throw new UnsupportedOperationException(
-                "Las facturas no se eliminan físicamente."
-        );
+        throw new UnsupportedOperationException("Las facturas no se eliminan físicamente.");
     }
 
     @Override
     protected Factura mapRow(ResultSet rs) throws SQLException {
+
         return new Factura(
                 rs.getInt("id"),
                 rs.getDouble("total"),
                 MetodoPago.valueOf(rs.getString("metodo")),
                 rs.getInt("cuotas"),
+                rs.getDate("fecha_alta").toLocalDate(),
                 rs.getDate("vencimiento").toLocalDate(),
                 EstadoFactura.valueOf(rs.getString("estado")),
                 rs.getDate("fecha_pago") != null ? rs.getDate("fecha_pago").toLocalDate() : null

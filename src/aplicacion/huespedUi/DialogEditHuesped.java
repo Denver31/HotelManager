@@ -1,5 +1,7 @@
 package aplicacion.huespedUi;
 
+import aplicacion.huespedUi.presenter.EditHuespedPresenter;
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -13,6 +15,17 @@ public class DialogEditHuesped extends JDialog {
     private static final Color ACCENT = new Color(0, 120, 215);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+
+    // ============================================================
+    // MVP
+    // ============================================================
+    private EditHuespedPresenter presenter;
+
+    public void setPresenter(EditHuespedPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // ============================================================
 
     private final int idHuesped;
 
@@ -39,12 +52,18 @@ public class DialogEditHuesped extends JDialog {
 
         initComponents();
 
+        // inicialización de campos
         txtDni.setText(dni);
         txtNombre.setText(nombre);
         txtApellido.setText(apellido);
         txtEmail.setText(email);
 
+        // DNI NO ES EDITABLE (en tu dominio no cambia)
+        txtDni.setEditable(false);
+        txtDni.setEnabled(false);
+
         setContentPane(buildMainPanel());
+        initListeners();
     }
 
     private void initComponents() {
@@ -102,6 +121,15 @@ public class DialogEditHuesped extends JDialog {
         return global;
     }
 
+    // ============================================================
+    // LISTENERS MVP
+    // ============================================================
+    private void initListeners() {
+        btnGuardar.addActionListener(e -> {
+            if (presenter != null) presenter.onGuardar();
+        });
+    }
+
     private void addRow(JPanel panel, GridBagConstraints gbc,
                         int y, String label, JComponent comp) {
 
@@ -116,5 +144,25 @@ public class DialogEditHuesped extends JDialog {
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(comp, gbc);
+    }
+
+    // ============================================================
+    // Métodos para Presenter
+    // ============================================================
+    public String getDni() { return txtDni.getText().trim(); }
+    public String getNombre() { return txtNombre.getText().trim(); }
+    public String getApellido() { return txtApellido.getText().trim(); }
+    public String getEmail() { return txtEmail.getText().trim(); }
+
+    public void mostrarError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void mostrarExito(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void cerrar() {
+        dispose();
     }
 }

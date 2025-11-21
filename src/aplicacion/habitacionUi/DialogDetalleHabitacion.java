@@ -4,9 +4,11 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+import aplicacion.habitacionUi.presenter.DetalleHabitacionPresenter;
+import dto.HabitacionDetalleDTO;
+
 public class DialogDetalleHabitacion extends JDialog {
 
-    // Estilos
     private static final Color BG = new Color(245, 247, 250);
     private static final Color ACCENT = new Color(0, 120, 215);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
@@ -21,6 +23,14 @@ public class DialogDetalleHabitacion extends JDialog {
 
     private final int idHabitacion;
 
+    // Presenter
+    private DetalleHabitacionPresenter presenter;
+
+    public void setPresenter(DetalleHabitacionPresenter presenter) {
+        this.presenter = presenter;
+        initPresenterListeners();
+    }
+
     public DialogDetalleHabitacion(Window owner, int idHabitacion) {
         super(owner, "Detalle de Habitación", ModalityType.APPLICATION_MODAL);
         this.idHabitacion = idHabitacion;
@@ -32,8 +42,6 @@ public class DialogDetalleHabitacion extends JDialog {
 
         initComponents();
         setContentPane(buildMainPanel());
-        initListeners();
-        cargarMockDatos();
     }
 
     private void initComponents() {
@@ -122,26 +130,25 @@ public class DialogDetalleHabitacion extends JDialog {
 
         p.add(lbl);
         p.add(value);
-
         p.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         return p;
     }
 
-    private void initListeners() {
+    // ============================================================
+    // Interacción con el Presenter
+    // ============================================================
+    private void initPresenterListeners() {
 
         btnBaja.addActionListener(e -> {
             if (confirm("¿Dar de baja esta habitación?")) {
-                lblEstado.setText("BAJA");
-                btnBaja.setEnabled(false);
-                btnReactivar.setEnabled(true);
+                presenter.darDeBaja();
             }
         });
 
         btnReactivar.addActionListener(e -> {
             if (confirm("¿Reactivar esta habitación?")) {
-                lblEstado.setText("ACTIVA");
-                btnBaja.setEnabled(true);
-                btnReactivar.setEnabled(false);
+                presenter.activar();
             }
         });
     }
@@ -151,20 +158,40 @@ public class DialogDetalleHabitacion extends JDialog {
                 JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
     }
 
-    private void cargarMockDatos() {
+    // ============================================================
+    // Métodos requeridos por el Presenter (API de View)
+    // ============================================================
 
-        lblNombre.setText("Suite 12");
-        lblTipo.setText("MATRIMONIAL");
-        lblCapacidad.setText("2");
-        lblDescripcion.setText("Suite amplia con vista al mar.");
-        lblPrecio.setText("$25.000");
-        lblEstado.setText("ACTIVA");
+    public void setDatos(HabitacionDetalleDTO dto) {
+        lblNombre.setText(dto.nombre());
+        lblTipo.setText(dto.tipo().toString());
+        lblCapacidad.setText(String.valueOf(dto.capacidad()));
+        lblDescripcion.setText(
+                "<html><body style='width:300px'>" +
+                        dto.descripcion().replace("\n", "<br>") +
+                        "</body></html>"
+        );
+        lblPrecio.setText("$" + dto.precio());
+        lblEstado.setText(dto.estado());
 
-        actualizarBotones("ACTIVA");
+        actualizarBotones(dto.estado());
     }
 
     private void actualizarBotones(String estado) {
-        btnBaja.setEnabled(estado.equals("ACTIVA"));
-        btnReactivar.setEnabled(estado.equals("BAJA"));
+        boolean activa = estado.equalsIgnoreCase("ACTIVA");
+        btnBaja.setEnabled(activa);
+        btnReactivar.setEnabled(!activa);
+    }
+
+    public void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void showSuccess(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void cerrar() {
+        dispose();
     }
 }

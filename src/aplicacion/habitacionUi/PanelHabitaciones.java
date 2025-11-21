@@ -8,16 +8,31 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.Instant;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import java.sql.Connection;
+import almacenamiento.DatabaseManager;
+import almacenamiento.FacturaStorage;
+import almacenamiento.HuespedStorage;
+import almacenamiento.ReservaStorage;
+
+
+import aplicacion.habitacionUi.presenter.HabitacionesPresenter;
+
+import dto.HabitacionListadoDTO;
+import servicios.HabitacionService;
+import servicios.ReservaService;
+import almacenamiento.HabitacionStorage;
+
+
+
 public class PanelHabitaciones extends JPanel {
 
-    // Estilos compartidos con PanelReservas
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
@@ -25,20 +40,24 @@ public class PanelHabitaciones extends JPanel {
     private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
-    // Tabla
     private JTable tablaHabitaciones;
     private HabitacionesTableModel habitacionesTableModel;
 
-    // Búsqueda y filtros
     private JTextField txtBuscar;
     private JSpinner spDesde;
     private JSpinner spHasta;
 
-    // Botones
     private JButton btnBuscarTexto;
     private JButton btnFiltrarFechas;
     private JButton btnLimpiar;
     private JButton btnNuevaHabitacion;
+
+    // Presenter
+    private HabitacionesPresenter presenter;
+
+    public void setPresenter(HabitacionesPresenter presenter) {
+        this.presenter = presenter;
+    }
 
     public PanelHabitaciones() {
 
@@ -49,7 +68,6 @@ public class PanelHabitaciones extends JPanel {
         initComponents();
         add(buildMainPanel(), BorderLayout.CENTER);
         initListeners();
-        cargarHabitacionesDummy();
     }
 
     private void initComponents() {
@@ -121,9 +139,6 @@ public class PanelHabitaciones extends JPanel {
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // ===============================
-        // FILA 1 - Filtros por fecha
-        // ===============================
         gbc.gridy = 0;
 
         gbc.gridx = 0; inside.add(new JLabel("Desde:"), gbc);
@@ -135,9 +150,6 @@ public class PanelHabitaciones extends JPanel {
         gbc.gridx = 4; inside.add(btnFiltrarFechas, gbc);
         gbc.gridx = 5; inside.add(btnLimpiar, gbc);
 
-        // ===============================
-        // FILA 2 - Búsqueda y nueva habitación
-        // ===============================
         gbc.gridy = 1;
 
         gbc.gridx = 0; inside.add(new JLabel("Buscar (ID / Nombre):"), gbc);
@@ -189,84 +201,79 @@ public class PanelHabitaciones extends JPanel {
 
     private void initListeners() {
 
-        // Doble click → abrir detalle
         tablaHabitaciones.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-
-                if (e.getClickCount() == 2 && tablaHabitaciones.getSelectedRow() != -1) {
-
-                    int row = tablaHabitaciones.convertRowIndexToModel(
-                            tablaHabitaciones.getSelectedRow()
-                    );
-                    int id = (Integer) habitacionesTableModel.getValueAt(row, 0);
-
-                    DialogDetalleHabitacion dialog = new DialogDetalleHabitacion(
-                            SwingUtilities.getWindowAncestor(PanelHabitaciones.this),
-                            id
-                    );
-
-                    dialog.setLocationRelativeTo(PanelHabitaciones.this);
-                    dialog.setVisible(true);
+                if (e.getClickCount() == 2) {
+                    presenter.abrirDetalle();
                 }
             }
         });
 
-        btnBuscarTexto.addActionListener(e -> aplicarBusquedaTexto());
-        btnFiltrarFechas.addActionListener(e -> aplicarFiltroFechas());
-        btnLimpiar.addActionListener(e -> limpiarFiltros());
+        btnBuscarTexto.addActionListener(e -> presenter.buscarPorTexto());
+        btnFiltrarFechas.addActionListener(e -> presenter.filtrarPorFechas());
+        btnLimpiar.addActionListener(e -> presenter.limpiar());
+        btnNuevaHabitacion.addActionListener(e -> presenter.nuevaHabitacion());
 
-        btnNuevaHabitacion.addActionListener(e -> {
-            DialogCrearHabitacion dialog = new DialogCrearHabitacion(
-                    SwingUtilities.getWindowAncestor(this)
-            );
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
-        });
     }
 
-    // --------------------
-    // Utilidades fechas
-    // --------------------
-    private LocalDate getLocalDate(JSpinner spinner) {
+    // ============================================================
+    // API del Presenter
+    // ============================================================
 
-        Date date = (Date) spinner.getValue();
-
-        return Instant.ofEpochMilli(date.getTime())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
+    public void setListado(List<HabitacionListadoDTO> lista) {
+        List<Object[]> filas = new ArrayList<>();
+        for (HabitacionListadoDTO h : lista) {
+            filas.add(new Object[]{
+                    h.id(),
+                    h.nombre(),
+                    h.tipo(),
+                    h.capacidad(),
+                    h.precio(),
+                    h.estado()
+            });
+        }
+        habitacionesTableModel.setHabitaciones(filas);
     }
 
-    // --------------------
-    // Acciones
-    // --------------------
-    private void aplicarBusquedaTexto() {
-        String filtro = txtBuscar.getText().trim();
-        System.out.println("[BUSCAR HABITACIÓN]: " + filtro);
+    public String getFiltroTexto() {
+        return txtBuscar.getText().trim();
     }
 
-    private void aplicarFiltroFechas() {
-        System.out.println("[FILTRO FECHAS]");
+    public LocalDate getFechaDesde() {
+        Date d = (Date) spDesde.getValue();
+        return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private void limpiarFiltros() {
+    public LocalDate getFechaHasta() {
+        Date d = (Date) spHasta.getValue();
+        return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    public int getHabitacionSeleccionada() {
+        int row = tablaHabitaciones.getSelectedRow();
+        if (row == -1) return -1;
+
+        int modelRow = tablaHabitaciones.convertRowIndexToModel(row);
+        return (Integer) habitacionesTableModel.getValueAt(modelRow, 0);
+    }
+
+    public void limpiarFiltros() {
         txtBuscar.setText("");
         spDesde.setValue(new Date());
         spHasta.setValue(new Date());
-        cargarHabitacionesDummy();
     }
 
-    private void cargarHabitacionesDummy() {
-
-        habitacionesTableModel.setHabitaciones(List.of(
-                new Object[]{1, "Suite 12", "MATRIMONIAL", 2, 25000.0, "ACTIVA"},
-                new Object[]{2, "Doble 7", "INDIVIDUAL", 1, 15000.0, "ACTIVA"},
-                new Object[]{3, "Compartida 1", "COMPARTIDA", 4, 8000.0, "BAJA"}
-        ));
+    public void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    // --------------------
-    // Table model
-    // --------------------
+    public void showSuccess(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // ============================================================
+    // Table Model
+    // ============================================================
     private static class HabitacionesTableModel extends AbstractTableModel {
 
         private final String[] columnas = {
@@ -280,32 +287,43 @@ public class PanelHabitaciones extends JPanel {
         @Override public String getColumnName(int col) { return columnas[col]; }
         @Override public Object getValueAt(int row, int col) { return filas.get(row)[col]; }
 
-        @Override
-        public Class<?> getColumnClass(int columnIndex) {
-            return switch (columnIndex) {
-                case 0 -> Integer.class;
-                case 3 -> Integer.class;
-                case 4 -> Double.class;
-                default -> String.class;
-            };
-        }
-
         public void setHabitaciones(List<Object[]> datos) {
             this.filas = new ArrayList<>(datos);
             fireTableDataChanged();
         }
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
 
         SwingUtilities.invokeLater(() -> {
 
-            JFrame frame = new JFrame("Test Panel");
+            Connection conn = DatabaseManager.getConnection();
+
+            HabitacionStorage habitacionStorage = new HabitacionStorage(conn);
+            HuespedStorage huespedStorage = new HuespedStorage(conn);
+            FacturaStorage facturaStorage = new FacturaStorage(conn);
+
+            ReservaStorage reservaStorage =
+                    new ReservaStorage(conn, habitacionStorage, huespedStorage, facturaStorage);
+
+            ReservaService reservaService = new ReservaService(reservaStorage);
+            HabitacionService habitacionService = new HabitacionService(habitacionStorage, reservaService);
+
+            PanelHabitaciones panel = new PanelHabitaciones();
+
+            HabitacionesPresenter presenter =
+                    new HabitacionesPresenter(habitacionService, panel);
+
+            panel.setPresenter(presenter);
+            presenter.cargarListado();
+
+            JFrame frame = new JFrame("Test Panel Habitaciones");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(1100, 700);
             frame.setLocationRelativeTo(null);
-            frame.setContentPane(new PanelHabitaciones());
+            frame.setContentPane(panel);
             frame.setVisible(true);
         });
-    }
+    }*/
+
 }

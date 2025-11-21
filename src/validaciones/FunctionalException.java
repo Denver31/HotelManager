@@ -1,11 +1,13 @@
 package validaciones;
 
-public class FunctionalException extends RuntimeException{
-    public FunctionalException(String mensaje) {
-        super(mensaje);
+public class FunctionalException extends RuntimeException {
+
+    public FunctionalException(String message) {
+        super(message);
     }
 
-    public FunctionalException(String mensaje, Throwable causa) {
-        super(mensaje, causa);
+    public FunctionalException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
+

@@ -1,9 +1,14 @@
-package aplicacion;
+package aplicacion.dashboardUi;
 
+import aplicacion.Sistema;
 import aplicacion.facturaUi.PanelFacturas;
+import aplicacion.facturaUi.presenter.FacturasPresenter;
 import aplicacion.habitacionUi.PanelHabitaciones;
+import aplicacion.habitacionUi.presenter.HabitacionesPresenter;
 import aplicacion.huespedUi.PanelHuespedes;
+import aplicacion.huespedUi.presenter.HuespedesPresenter;
 import aplicacion.reservaUi.PanelReservas;
+import aplicacion.reservaUi.presenter.ReservasPresenter;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -23,15 +28,21 @@ public class PanelControl extends JPanel {
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 26);
     private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
 
-    // Tablas
-    private JTable tablaOcupacion;
+    // Presenter
+    private PanelControlPresenter presenter;
+
+    private final Sistema sistema;
+
+    // Componentes que el presenter actualizará
+    private JLabel lblOcupacion;
+
     private JTable tablaEntradas;
     private JTable tablaSalidas;
     private JTable tablaPendientes;
     private JTable tablaVencidas;
 
-
-    public PanelControl() {
+    public PanelControl(Sistema sistema) {
+        this.sistema = sistema;
 
         setLayout(new BorderLayout());
         setBackground(BG);
@@ -40,6 +51,17 @@ public class PanelControl extends JPanel {
         add(buildMainLayout(), BorderLayout.CENTER);
     }
 
+    // ============================================================
+    // Inyección MVP
+    // ============================================================
+    public void setPresenter(PanelControlPresenter presenter) {
+        this.presenter = presenter;
+        presenter.cargarDashboard();
+    }
+
+    // ============================================================
+    // UI
+    // ============================================================
     private JComponent buildTitle() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         p.setOpaque(false);
@@ -57,18 +79,12 @@ public class PanelControl extends JPanel {
         JPanel base = new JPanel(new BorderLayout(20, 0));
         base.setOpaque(false);
 
-        // Izquierda → paneles informativos
         base.add(buildLeftPanels(), BorderLayout.CENTER);
-
-        // Derecha → botones grandes
         base.add(buildButtonsColumn(), BorderLayout.EAST);
 
         return base;
     }
 
-    // =====================================================================================
-    // IZQUIERDA: PANEL DESPLEGADO CON LOS 5 ITEMS DEL DASHBOARD
-    // =====================================================================================
     private JPanel buildLeftPanels() {
 
         JPanel left = new JPanel();
@@ -98,7 +114,7 @@ public class PanelControl extends JPanel {
         gbc.gridx = 1;
         left.add(createCardPendientes(), gbc);
 
-        // ---- FILA 3 (facturas vencidas ocupa toda la fila) ----
+        // ---- FILA 3 ----
         gbc.gridy = 2;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
@@ -108,25 +124,24 @@ public class PanelControl extends JPanel {
         return left;
     }
 
-    // =====================================================================================
+    // ============================================================
     // PANEL OCUPACIÓN
-    // =====================================================================================
+    // ============================================================
     private JPanel createCardOcupacion() {
         JPanel card = buildCard("Ocupación");
 
         JPanel center = new JPanel(new GridBagLayout());
         center.setOpaque(false);
 
-        JLabel lbl = new JLabel("78 %");  // valor mock — luego se actualiza con Sistema
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 42));
-        lbl.setForeground(ACCENT);
+        lblOcupacion = new JLabel("— %");
+        lblOcupacion.setFont(new Font("Segoe UI", Font.BOLD, 42));
+        lblOcupacion.setForeground(ACCENT);
 
-        center.add(lbl);
+        center.add(lblOcupacion);
         card.add(center, BorderLayout.CENTER);
 
         return card;
     }
-
 
     private JPanel createCardEntradas() {
         JPanel card = buildCard("Próximas entradas");
@@ -172,9 +187,9 @@ public class PanelControl extends JPanel {
         return card;
     }
 
-    // =====================================================================================
-    // DERECHA: COLUMNA DE BOTONES GRANDES
-    // =====================================================================================
+    // ============================================================
+    // BOTONES DERECHA
+    // ============================================================
     private JPanel buildButtonsColumn() {
 
         JPanel right = new JPanel();
@@ -182,16 +197,16 @@ public class PanelControl extends JPanel {
         right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
         right.setBorder(new EmptyBorder(10, 10, 10, 30));
 
-        right.add(createBigButton("Reservas", () -> open(new PanelReservas())));
+        right.add(createBigButton("Reservas", () -> presenter.abrirReservas()));
         right.add(Box.createVerticalStrut(20));
 
-        right.add(createBigButton("Habitaciones", () -> open(new PanelHabitaciones())));
+        right.add(createBigButton("Habitaciones", () -> presenter.abrirHabitaciones()));
         right.add(Box.createVerticalStrut(20));
 
-        right.add(createBigButton("Huéspedes", () -> open(new PanelHuespedes())));
+        right.add(createBigButton("Huéspedes", () -> presenter.abrirHuespedes()));
         right.add(Box.createVerticalStrut(20));
 
-        right.add(createBigButton("Facturas", () -> open(new PanelFacturas())));
+        right.add(createBigButton("Facturas", () -> presenter.abrirFacturas()));
 
         return right;
     }
@@ -212,10 +227,64 @@ public class PanelControl extends JPanel {
         return btn;
     }
 
-    // =====================================================================================
-    // UTILIDADES
-    // =====================================================================================
+    // ============================================================
+    // MÉTODOS PARA ABRIR PANELES (CORRECTOS)
+    // ============================================================
+    private void abrirReservas() {
+        PanelReservas panel = new PanelReservas();
+        ReservasPresenter presenter =
+                new ReservasPresenter(panel, sistema.reservaService,  sistema.huespedService, sistema.habitacionService, sistema.facturaService);
 
+        panel.setPresenter(presenter);
+        presenter.cargarListado();
+
+        abrirVentana(panel, "Reservas");
+    }
+
+    private void abrirHabitaciones() {
+        PanelHabitaciones panel = new PanelHabitaciones();
+        HabitacionesPresenter presenter =
+                new HabitacionesPresenter(sistema.habitacionService, panel);
+
+        panel.setPresenter(presenter);
+        presenter.cargarListado();
+
+        abrirVentana(panel, "Habitaciones");
+    }
+
+    private void abrirHuespedes() {
+        PanelHuespedes panel = new PanelHuespedes();
+        HuespedesPresenter presenter =
+                new HuespedesPresenter(sistema.huespedService, panel);
+
+        panel.setPresenter(presenter);
+        presenter.cargarListado();
+
+        abrirVentana(panel, "Huéspedes");
+    }
+
+    private void abrirFacturas() {
+        PanelFacturas panel = new PanelFacturas();
+        FacturasPresenter presenter =
+                new FacturasPresenter(panel, sistema.facturaService);
+
+        panel.setPresenter(presenter);
+        presenter.cargarFacturas();
+
+        abrirVentana(panel, "Facturas");
+    }
+
+    public void abrirVentana(JPanel panel, String titulo) {
+        JFrame f = new JFrame(titulo);
+        f.setSize(1000, 700);
+        f.setLocationRelativeTo(null);
+        f.setContentPane(panel);
+        f.setVisible(true);
+    }
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
     private JPanel buildCard(String title) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(CARD);
@@ -236,24 +305,13 @@ public class PanelControl extends JPanel {
         return card;
     }
 
-    private void open(JPanel panel) {
-        JFrame f = new JFrame();
-        f.setTitle("Ventana");
-        f.setSize(1000, 700);
-        f.setLocationRelativeTo(null);
-        f.setContentPane(panel);
-        f.setVisible(true);
-    }
+    // ============================================================
+    // GETTERS PARA PRESENTER
+    // ============================================================
+    public JLabel getLblOcupacion() { return lblOcupacion; }
+    public JTable getTablaEntradas() { return tablaEntradas; }
+    public JTable getTablaSalidas() { return tablaSalidas; }
+    public JTable getTablaPendientes() { return tablaPendientes; }
+    public JTable getTablaVencidas() { return tablaVencidas; }
 
-    // ---------------- MAIN TEST -----------------
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Test PanelControl");
-            frame.setSize(1200, 800);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-            frame.setContentPane(new PanelControl());
-            frame.setVisible(true);
-        });
-    }
 }

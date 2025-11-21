@@ -1,5 +1,8 @@
 package aplicacion.huespedUi;
 
+import aplicacion.huespedUi.presenter.DetalleHuespedPresenter;
+import dto.HuespedDetalleDTO;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -11,6 +14,17 @@ public class DialogDetalleHuesped extends JDialog {
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font SECTION_FONT = new Font("Segoe UI", Font.BOLD, 14);
+
+    // ============================================================
+    // MVP
+    // ============================================================
+    private DetalleHuespedPresenter presenter;
+
+    public void setPresenter(DetalleHuespedPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // ============================================================
 
     private JLabel lblNombre;
     private JLabel lblApellido;
@@ -36,7 +50,6 @@ public class DialogDetalleHuesped extends JDialog {
         initComponents();
         setContentPane(buildMainPanel());
         initListeners();
-        cargarMockDatos();
     }
 
     private void initComponents() {
@@ -131,61 +144,63 @@ public class DialogDetalleHuesped extends JDialog {
         return p;
     }
 
+    // ============================================================
+    // LISTENERS (MVP)
+    // ============================================================
     private void initListeners() {
 
         btnBaja.addActionListener(e -> {
-            // TODO: validar con reglas de negocio (reservas PENDIENTE/CONFIRMADA/ACTIVA)
-            if (confirm("¿Dar de baja este huésped?")) {
-                lblEstado.setText("BAJA");
-                actualizarBotones("BAJA");
-            }
+            if (presenter != null) presenter.onDarDeBaja();
         });
 
         btnReactivar.addActionListener(e -> {
-            if (confirm("¿Reactivar este huésped?")) {
-                lblEstado.setText("ACTIVO");
-                actualizarBotones("ACTIVO");
-            }
+            if (presenter != null) presenter.onReactivar();
         });
 
         btnEditar.addActionListener(e -> {
-            DialogEditHuesped dialog = new DialogEditHuesped(
-                    SwingUtilities.getWindowAncestor(this),
-                    idHuesped,
-                    lblDni.getText(),
-                    lblNombre.getText(),
-                    lblApellido.getText(),
-                    lblEmail.getText()
-            );
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
-            // TODO: luego de editar, recargar datos desde el controller
+            if (presenter != null) presenter.onEditar();
         });
     }
 
-    private boolean confirm(String msg) {
-        return JOptionPane.showConfirmDialog(this, msg, "Confirmar",
-                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    // ============================================================
+    // MÉTODOS PARA EL PRESENTER
+    // ============================================================
+
+    public void mostrarDatos(HuespedDetalleDTO dto) {
+        lblNombre.setText(dto.nombre());
+        lblApellido.setText(dto.apellido());
+        lblDni.setText(dto.dni());
+        lblEmail.setText(dto.email());
+        lblEstado.setText(dto.estado());
+        setBotonesPorEstado(dto.estado());
     }
 
-    private void cargarMockDatos() {
-
-        // MOCK hasta tener controller
-        lblNombre.setText("Juan");
-        lblApellido.setText("Pérez");
-        lblDni.setText("30123456");
-        lblEmail.setText("juan@example.com");
-        lblEstado.setText("ACTIVO");
-
-        actualizarBotones("ACTIVO");
-    }
-
-    private void actualizarBotones(String estado) {
+    public void setBotonesPorEstado(String estado) {
         boolean activo = "ACTIVO".equalsIgnoreCase(estado);
-        boolean baja = "BAJA".equalsIgnoreCase(estado);
-
         btnEditar.setEnabled(activo);
         btnBaja.setEnabled(activo);
-        btnReactivar.setEnabled(baja);
+        btnReactivar.setEnabled(!activo);
     }
+
+    public void mostrarMensaje(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Información", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void mostrarError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public Window getOwnerWindow() {
+        return getOwner(); // <-- CORREGIDO
+    }
+
+    public void cerrar() {
+        dispose();
+    }
+
+    // GETTERS
+    public String getNombre() { return lblNombre.getText(); }
+    public String getApellido() { return lblApellido.getText(); }
+    public String getDni() { return lblDni.getText(); }
+    public String getEmail() { return lblEmail.getText(); }
 }

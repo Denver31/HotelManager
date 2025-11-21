@@ -1,5 +1,8 @@
 package aplicacion.facturaUi;
 
+import aplicacion.facturaUi.presenter.DetalleFacturaPresenter;
+import dto.FacturaDetalleDTO;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -13,6 +16,9 @@ public class DialogDetalleFactura extends JDialog {
 
     private final int idFactura;
 
+    // Presenter
+    private DetalleFacturaPresenter presenter;
+
     // Labels
     private JLabel lblEstado;
     private JLabel lblReservaId;
@@ -22,25 +28,42 @@ public class DialogDetalleFactura extends JDialog {
     private JLabel lblFechaVencimiento;
     private JLabel lblTotal;
 
+    // Nuevos labels
+    private JLabel lblMetodoPago;
+    private JLabel lblCuotas;
+    private JLabel lblFechaPago;
+
     // Botón
     private JButton btnRegistrarPago;
 
+    // ============================================================
+    // Constructor
+    // ============================================================
     public DialogDetalleFactura(Window owner, int idFactura) {
         super(owner, "Detalle de Factura", ModalityType.APPLICATION_MODAL);
         this.idFactura = idFactura;
 
-        setSize(550, 600);
+        setSize(550, 650);
         setLocationRelativeTo(owner);
-        setMinimumSize(new Dimension(500, 500));
+        setMinimumSize(new Dimension(500, 550));
         setBackground(BG);
 
         initComponents();
         setContentPane(buildMainPanel());
         initListeners();
-
-        cargarMockDatos(); // luego se reemplaza por controller
     }
 
+    // ============================================================
+    // Inyección del Presenter
+    // ============================================================
+    public void setPresenter(DetalleFacturaPresenter presenter) {
+        this.presenter = presenter;
+        presenter.cargarFactura(idFactura);
+    }
+
+    // ============================================================
+    // Componentes UI
+    // ============================================================
     private void initComponents() {
 
         lblEstado = createValueLabel();
@@ -50,6 +73,11 @@ public class DialogDetalleFactura extends JDialog {
         lblFechaAlta = createValueLabel();
         lblFechaVencimiento = createValueLabel();
         lblTotal = createValueLabel();
+
+        // Nuevos labels
+        lblMetodoPago = createValueLabel();
+        lblCuotas = createValueLabel();
+        lblFechaPago = createValueLabel();
 
         btnRegistrarPago = createButton("REGISTRAR PAGO", new Color(0, 160, 80));
     }
@@ -94,6 +122,20 @@ public class DialogDetalleFactura extends JDialog {
 
         // Total
         content.add(line("Total: ", lblTotal));
+        content.add(Box.createVerticalStrut(10));
+
+        // ============================================================
+        // NUEVA SECCIÓN: Información de pago
+        // ============================================================
+
+        content.add(line("Método de pago: ", lblMetodoPago));
+        content.add(Box.createVerticalStrut(10));
+
+        content.add(line("Cuotas: ", lblCuotas));
+        content.add(Box.createVerticalStrut(10));
+
+        content.add(line("Fecha de pago: ", lblFechaPago));
+        content.add(Box.createVerticalStrut(20));
 
         global.add(content);
 
@@ -136,39 +178,47 @@ public class DialogDetalleFactura extends JDialog {
         return p;
     }
 
+    // ============================================================
+    // Listeners
+    // ============================================================
     private void initListeners() {
-
         btnRegistrarPago.addActionListener(e -> {
-            // TODO: llamar a FacturaController.registrarPago(idFactura)
             if (confirm("¿Registrar pago de esta factura?")) {
-                lblEstado.setText("PAGADA");
-                actualizarBoton("PAGADA");
-                JOptionPane.showMessageDialog(this,
-                        "Pago registrado correctamente.",
-                        "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
+                presenter.registrarPago(idFactura);
             }
         });
     }
 
     private boolean confirm(String msg) {
-        return JOptionPane.showConfirmDialog(this, msg, "Confirmar",
-                JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+        return JOptionPane.showConfirmDialog(
+                this, msg, "Confirmar",
+                JOptionPane.YES_NO_OPTION
+        ) == JOptionPane.YES_OPTION;
     }
 
-    // MOCK hasta tener controller real
-    private void cargarMockDatos() {
+    // ============================================================
+    // Métodos llamados por el Presenter
+    // ============================================================
+    public void mostrarDetalle(FacturaDetalleDTO dto) {
 
-        // En la versión real, acá cargarías desde el controller usando idFactura
-        lblEstado.setText("PENDIENTE");
-        lblReservaId.setText("77");
-        lblHuespedId.setText("55");
-        lblNombreCompleto.setText("Juan Pérez");
-        lblFechaAlta.setText("2025-11-10");
-        lblFechaVencimiento.setText("2025-11-15");
-        lblTotal.setText("$50.000");
+        lblEstado.setText(dto.estado());
+        lblReservaId.setText(String.valueOf(dto.idReserva()));
+        lblHuespedId.setText(String.valueOf(dto.idHuesped()));
+        lblNombreCompleto.setText(dto.nombreCompleto());
+        lblFechaAlta.setText(dto.fechaAlta());
+        lblFechaVencimiento.setText(dto.fechaVencimiento());
+        lblTotal.setText(dto.total());
 
-        actualizarBoton("PENDIENTE");
+        // Nuevos
+        lblMetodoPago.setText(dto.metodoPago());
+        lblCuotas.setText(String.valueOf(dto.cuotas()));
+        lblFechaPago.setText(dto.fechaPago());
+
+        actualizarBoton(dto.estado());
+    }
+
+    public void mostrarMensaje(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Información", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void actualizarBoton(String estado) {

@@ -1,5 +1,8 @@
 package aplicacion.huespedUi;
 
+import aplicacion.huespedUi.presenter.CrearHuespedPresenter;   // <--- IMPORTANTE
+import dto.HuespedDetalleDTO;
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -13,6 +16,24 @@ public class DialogCrearHuesped extends JDialog {
     private static final Color ACCENT = new Color(0, 120, 215);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+
+    // ============================================================
+    // MVP - PRESENTER
+    // ============================================================
+    private CrearHuespedPresenter presenter;     // <--- NUEVO
+
+    private HuespedDetalleDTO creado;
+
+    public HuespedDetalleDTO getCreado() {
+        return creado;
+    }
+
+
+    public void setPresenter(CrearHuespedPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // ============================================================
 
     private JTextField txtDni;
     private JTextField txtNombre;
@@ -30,6 +51,7 @@ public class DialogCrearHuesped extends JDialog {
 
         initComponents();
         setContentPane(buildMainPanel());
+        initListeners();   // <--- NUEVO
     }
 
     private void initComponents() {
@@ -45,6 +67,49 @@ public class DialogCrearHuesped extends JDialog {
         btnCrear.setFocusPainted(false);
     }
 
+    // ============================================================
+    // LISTENERS (MVP)
+    // ============================================================
+    private void initListeners() {
+        btnCrear.addActionListener(e -> {
+            if (presenter != null) presenter.onCrear();   // <--- MVP
+        });
+    }
+
+    // ============================================================
+    // MÉTODOS QUE EL PRESENTER NECESITA
+    // ============================================================
+    public String getDni() {
+        return txtDni.getText().trim();
+    }
+
+    public String getNombre() {
+        return txtNombre.getText().trim();
+    }
+
+    public String getApellido() {
+        return txtApellido.getText().trim();
+    }
+
+    public String getEmail() {
+        return txtEmail.getText().trim();
+    }
+
+    public void mostrarError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void mostrarExito(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void cerrar() {
+        dispose();
+    }
+
+    // ============================================================
+    // PANEL VISUAL / UI
+    // ============================================================
     private JPanel buildMainPanel() {
 
         JPanel global = new JPanel(new BorderLayout());

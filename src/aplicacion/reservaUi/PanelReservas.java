@@ -1,5 +1,8 @@
 package aplicacion.reservaUi;
 
+import dto.reserva.ReservaListadoDTO;
+import aplicacion.reservaUi.presenter.ReservasPresenter;
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -17,7 +20,9 @@ import java.util.List;
 
 public class PanelReservas extends JPanel {
 
-    // Estilos
+    // ============================================================
+    // ESTILOS
+    // ============================================================
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
@@ -25,6 +30,18 @@ public class PanelReservas extends JPanel {
     private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
+    // ============================================================
+    // MVP
+    // ============================================================
+    private ReservasPresenter presenter;
+
+    public void setPresenter(ReservasPresenter presenter) {
+        this.presenter = presenter;
+    }
+
+    // ============================================================
+    // COMPONENTES
+    // ============================================================
     private JTable tablaReservas;
     private ReservasTableModel reservasTableModel;
 
@@ -48,9 +65,11 @@ public class PanelReservas extends JPanel {
         initComponents();
         add(buildMainPanel(), BorderLayout.CENTER);
         initListeners();
-        cargarReservasDummy();
     }
 
+    // ============================================================
+    // Inicialización componentes
+    // ============================================================
     private void initComponents() {
 
         reservasTableModel = new ReservasTableModel();
@@ -78,7 +97,7 @@ public class PanelReservas extends JPanel {
         btnBuscar.setBackground(ACCENT);
         btnBuscar.setForeground(Color.WHITE);
 
-        btnBuscarTexto = new JButton("🔎 Buscar");
+        btnBuscarTexto = new JButton("🔎 Buscar texto");
         btnBuscarTexto.setBackground(ACCENT);
         btnBuscarTexto.setForeground(Color.WHITE);
 
@@ -90,6 +109,9 @@ public class PanelReservas extends JPanel {
         btnNuevaReserva.setForeground(Color.WHITE);
     }
 
+    // ============================================================
+    // UI PRINCIPAL
+    // ============================================================
     private JPanel buildMainPanel() {
 
         JPanel main = new JPanel(new BorderLayout(10, 10));
@@ -117,6 +139,9 @@ public class PanelReservas extends JPanel {
         return content;
     }
 
+    // ============================================================
+    // Tarjetas (filtros + tabla)
+    // ============================================================
     private JPanel createFilterCard() {
 
         JPanel card = createCard("Filtros de búsqueda");
@@ -127,40 +152,22 @@ public class PanelReservas extends JPanel {
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // ===============================
         // FILA 1
-        // ===============================
-
         gbc.gridy = 0;
 
-        gbc.gridx = 0;
-        inside.add(new JLabel("Desde:"), gbc);
+        gbc.gridx = 0; inside.add(new JLabel("Desde:"), gbc);
+        gbc.gridx = 1; inside.add(spDesde, gbc);
 
-        gbc.gridx = 1;
-        inside.add(spDesde, gbc);
+        gbc.gridx = 2; inside.add(new JLabel("Hasta:"), gbc);
+        gbc.gridx = 3; inside.add(spHasta, gbc);
 
-        gbc.gridx = 2;
-        inside.add(new JLabel("Hasta:"), gbc);
+        gbc.gridx = 4; inside.add(new JLabel("Estado:"), gbc);
+        gbc.gridx = 5; inside.add(cboEstado, gbc);
 
-        gbc.gridx = 3;
-        inside.add(spHasta, gbc);
+        gbc.gridx = 6; inside.add(btnBuscar, gbc);
+        gbc.gridx = 7; inside.add(btnLimpiar, gbc);
 
-        gbc.gridx = 4;
-        inside.add(new JLabel("Estado:"), gbc);
-
-        gbc.gridx = 5;
-        inside.add(cboEstado, gbc);
-
-        gbc.gridx = 6;
-        inside.add(btnBuscar, gbc);
-
-        gbc.gridx = 7;
-        inside.add(btnLimpiar, gbc);
-
-        // ===============================
         // FILA 2
-        // ===============================
-
         gbc.gridy = 1;
 
         gbc.gridx = 0;
@@ -182,7 +189,6 @@ public class PanelReservas extends JPanel {
         inside.add(btnNuevaReserva, gbc);
 
         card.add(inside, BorderLayout.CENTER);
-
         return card;
     }
 
@@ -215,11 +221,12 @@ public class PanelReservas extends JPanel {
         return card;
     }
 
+    // ============================================================
+    // LISTENERS – Pasan todo al Presenter
+    // ============================================================
     private void initListeners() {
 
-        // ---------------------
-        // DOBLE CLICK
-        // ---------------------
+        // Doble click → abrir detalle
         tablaReservas.addMouseListener(new MouseAdapter() {
 
             public void mouseClicked(MouseEvent e) {
@@ -229,35 +236,37 @@ public class PanelReservas extends JPanel {
                     int row = tablaReservas.convertRowIndexToModel(tablaReservas.getSelectedRow());
                     int id = (Integer) reservasTableModel.getValueAt(row, 0);
 
-                    DialogDetalleReserva dialog = new DialogDetalleReserva(
-                            SwingUtilities.getWindowAncestor(PanelReservas.this),
-                            id
-                    );
-
-                    dialog.setLocationRelativeTo(PanelReservas.this);
-                    dialog.setVisible(true);
+                    if (presenter != null)
+                        presenter.abrirDetalle(id);
                 }
             }
         });
 
-        btnBuscar.addActionListener(e -> aplicarFiltros());
-        btnBuscarTexto.addActionListener(e -> aplicarBusquedaTexto());
+        btnBuscar.addActionListener(e -> {
+            if (presenter != null)
+                presenter.aplicarFiltros(
+                        getLocalDate(spDesde),
+                        getLocalDate(spHasta),
+                        cboEstado.getSelectedItem().toString()
+                );
+        });
+
+        btnBuscarTexto.addActionListener(e -> {
+            if (presenter != null)
+                presenter.aplicarBusquedaTexto(txtFiltroTexto.getText().trim());
+        });
+
         btnLimpiar.addActionListener(e -> limpiarFiltros());
 
         btnNuevaReserva.addActionListener(e -> {
-
-            DialogCrearReserva dialog = new DialogCrearReserva(
-                    SwingUtilities.getWindowAncestor(this)
-            );
-
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
+            if (presenter != null)
+                presenter.abrirCrearReserva();
         });
     }
 
-    // --------------------
-    // CONVERSIÓN FECHAS
-    // --------------------
+    // ============================================================
+    // Utilidad: convertir Spinner → LocalDate
+    // ============================================================
     private LocalDate getLocalDate(JSpinner spinner) {
 
         Date date = (Date) spinner.getValue();
@@ -267,42 +276,44 @@ public class PanelReservas extends JPanel {
                 .toLocalDate();
     }
 
-    // --------------------
-    // ACCIONES
-    // --------------------
-    private void aplicarFiltros() {
-        System.out.println("[FILTROS]");
-        System.out.println("Desde: " + getLocalDate(spDesde));
-        System.out.println("Hasta: " + getLocalDate(spHasta));
-        System.out.println("Estado: " + cboEstado.getSelectedItem());
+    // ============================================================
+    // ACCIONES DE LA VISTA (usadas por el Presenter)
+    // ============================================================
+    public void mostrarReservas(List<ReservaListadoDTO> lista) {
+
+        List<Object[]> filas = new ArrayList<>();
+
+        for (ReservaListadoDTO dto : lista) {
+            filas.add(new Object[]{
+                    dto.idReserva(),
+                    dto.idHuesped(),
+                    dto.nombreCompletoHuesped(),
+                    dto.idHabitacion(),
+                    dto.nombreHabitacion(),
+                    dto.desde(),
+                    dto.hasta(),
+                    dto.estado()
+            });
+        }
+
+        reservasTableModel.setReservas(filas);
     }
 
-    private void aplicarBusquedaTexto() {
-        System.out.println("[BUSCAR TEXTO]: " + txtFiltroTexto.getText());
+    public void mostrarError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void limpiarFiltros() {
-
+    public void limpiarFiltros() {
         spDesde.setValue(new Date());
         spHasta.setValue(new Date());
-
         txtFiltroTexto.setText("");
         cboEstado.setSelectedIndex(0);
-
-        cargarReservasDummy();
+        presenter.cargarListado();
     }
 
-    private void cargarReservasDummy() {
-
-        reservasTableModel.setReservas(List.of(
-                new Object[]{1, 101, "Juan Pérez", 12, "Suite 12", "2025-11-01", "2025-11-05", "ACTIVA"},
-                new Object[]{2, 102, "Ana Gómez", 7, "Doble 7", "2025-11-10", "2025-11-15", "PENDIENTE"}
-        ));
-    }
-
-    // --------------------
+    // ============================================================
     // TABLE MODEL
-    // --------------------
+    // ============================================================
     private static class ReservasTableModel extends AbstractTableModel {
 
         private final String[] columnas = {
@@ -312,10 +323,25 @@ public class PanelReservas extends JPanel {
 
         private List<Object[]> filas = new ArrayList<>();
 
-        @Override public int getRowCount() { return filas.size(); }
-        @Override public int getColumnCount() { return columnas.length; }
-        @Override public String getColumnName(int col) { return columnas[col]; }
-        @Override public Object getValueAt(int row, int col) { return filas.get(row)[col]; }
+        @Override
+        public int getRowCount() {
+            return filas.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnas.length;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return columnas[col];
+        }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            return filas.get(row)[col];
+        }
 
         public void setReservas(List<Object[]> datos) {
             this.filas = datos;
@@ -323,16 +349,49 @@ public class PanelReservas extends JPanel {
         }
     }
 
-    public static void main(String[] args) {
+
+
+    /* public static void main(String[] args) {
 
         SwingUtilities.invokeLater(() -> {
 
-            JFrame frame = new JFrame("Test Panel");
+            Connection conn = DatabaseManager.getConnection();
+
+            // ===== Storages =====
+            HabitacionStorage habitacionStorage = new HabitacionStorage(conn);
+            HuespedStorage huespedStorage = new HuespedStorage(conn);
+            FacturaStorage facturaStorage = new FacturaStorage(conn);
+            ReservaStorage reservaStorage = new ReservaStorage(conn, habitacionStorage, huespedStorage, facturaStorage);
+
+
+            // ===== Services =====
+            ReservaService reservaService = new ReservaService(reservaStorage);
+            FacturaService facturaService = new FacturaService(facturaStorage, reservaService);
+            HuespedService huespedService = new HuespedService(huespedStorage, reservaService);
+            HabitacionService habitacionService = new HabitacionService(habitacionStorage, reservaService);
+
+
+            // ===== UI =====
+            PanelReservas panel = new PanelReservas();
+
+            ReservasPresenter presenter = new ReservasPresenter(
+                    panel,
+                    reservaService,
+                    huespedService,
+                    habitacionService,
+                    facturaService
+            );
+
+            panel.setPresenter(presenter);
+            presenter.cargarListado();
+
+            JFrame frame = new JFrame("Test Reservas");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(1100, 700);
+            frame.setSize(1200, 800);
             frame.setLocationRelativeTo(null);
-            frame.setContentPane(new PanelReservas());
+            frame.setContentPane(panel);
             frame.setVisible(true);
         });
-    }
+    }*/
+
 }

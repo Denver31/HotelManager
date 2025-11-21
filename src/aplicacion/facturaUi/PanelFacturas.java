@@ -1,5 +1,19 @@
 package aplicacion.facturaUi;
 
+import aplicacion.facturaUi.presenter.FacturasPresenter;
+import aplicacion.facturaUi.presenter.DetalleFacturaPresenter;
+import aplicacion.huespedUi.PanelHuespedes;
+import dto.FacturaListadoDTO;
+import servicios.FacturaService;
+
+import almacenamiento.*;
+import servicios.HabitacionService;
+import servicios.HuespedService;
+import servicios.ReservaService;
+import almacenamiento.DatabaseManager;
+
+import java.sql.Connection;
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -13,7 +27,10 @@ import java.util.List;
 
 public class PanelFacturas extends JPanel {
 
-    // Estilos compartidos
+    // Presenter
+    private FacturasPresenter presenter;
+
+    // Estilos
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
@@ -37,9 +54,19 @@ public class PanelFacturas extends JPanel {
         initComponents();
         add(buildMainPanel(), BorderLayout.CENTER);
         initListeners();
-        cargarFacturasDummy();
     }
 
+    // ============================================================
+    // Inyección de Presenter
+    // ============================================================
+    public void setPresenter(FacturasPresenter presenter) {
+        this.presenter = presenter;
+        presenter.cargarFacturas(); // carga inicial real
+    }
+
+    // ============================================================
+    // Inicialización UI
+    // ============================================================
     private void initComponents() {
 
         facturasTableModel = new FacturasTableModel();
@@ -145,54 +172,77 @@ public class PanelFacturas extends JPanel {
         return card;
     }
 
+    // ============================================================
+    // Listeners (MVP)
+    // ============================================================
     private void initListeners() {
 
         tablaFacturas.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && tablaFacturas.getSelectedRow() != -1) {
 
-                    int row = tablaFacturas.convertRowIndexToModel(
-                            tablaFacturas.getSelectedRow()
-                    );
+                    int row = tablaFacturas.convertRowIndexToModel(tablaFacturas.getSelectedRow());
                     int idFactura = (Integer) facturasTableModel.getValueAt(row, 0);
 
-                    DialogDetalleFactura dialog = new DialogDetalleFactura(
-                            SwingUtilities.getWindowAncestor(PanelFacturas.this),
-                            idFactura
-                    );
-                    dialog.setLocationRelativeTo(PanelFacturas.this);
-                    dialog.setVisible(true);
+                    presenter.abrirDetalleFactura(idFactura);
                 }
             }
         });
 
-        btnBuscar.addActionListener(e -> aplicarBusqueda());
-        btnLimpiar.addActionListener(e -> limpiarBusqueda());
+        btnBuscar.addActionListener(e ->
+                presenter.buscar(txtBuscar.getText().trim())
+        );
+
+        btnLimpiar.addActionListener(e ->
+                presenter.limpiar()
+        );
     }
 
-    private void aplicarBusqueda() {
-        String filtro = txtBuscar.getText().trim();
-        System.out.println("[BUSCAR FACTURA]: " + filtro);
-        // TODO: llamar a Controller / Sistema para buscar por ID factura, ID huésped, nombre o ID reserva
+    // ============================================================
+    // Métodos usados por el Presenter
+    // ============================================================
+    public void mostrarFacturas(List<FacturaListadoDTO> dtos) {
+
+        List<Object[]> filas = dtos.stream()
+                .map(dto -> new Object[]{
+                        dto.idFactura(),
+                        dto.idHuesped(),
+                        dto.nombreCompleto(),
+                        dto.idReserva(),
+                        dto.fechaAlta(),
+                        dto.fechaVencimiento(),
+                        dto.estado()
+                })
+                .toList();
+
+        facturasTableModel.setFacturas(filas);
     }
 
-    private void limpiarBusqueda() {
+    public void limpiarFiltro() {
         txtBuscar.setText("");
-        cargarFacturasDummy();
     }
 
-    private void cargarFacturasDummy() {
-        facturasTableModel.setFacturas(List.of(
-                new Object[]{1, 55, "Juan Pérez", 77, "2025-11-10", "2025-11-15", "PENDIENTE"},
-                new Object[]{2, 56, "Ana Gómez", 78, "2025-10-01", "2025-10-10", "PAGADA"},
-                new Object[]{3, 57, "Carlos López", 79, "2025-09-01", "2025-09-10", "VENCIDA"},
-                new Object[]{4, 58, "Laura Díaz", 80, "2025-08-05", "2025-08-15", "CANCELADA"}
-        ));
+    public void abrirDialogoDetalleFactura(int idFactura) {
+
+        Window owner = SwingUtilities.getWindowAncestor(this);
+
+        DialogDetalleFactura dialog = new DialogDetalleFactura(owner, idFactura);
+
+        // Presenter hijo con callback al presenter padre
+        DetalleFacturaPresenter dp = new DetalleFacturaPresenter(
+                dialog,
+                presenter.getFacturaService(),
+                () -> presenter.cargarFacturas() // REFRESCA TABLA
+        );
+
+        dialog.setPresenter(dp);
+        dialog.setVisible(true);
     }
 
-    // --------------------
+
+    // ============================================================
     // Table Model
-    // --------------------
+    // ============================================================
     private static class FacturasTableModel extends AbstractTableModel {
 
         private final String[] columnas = {
@@ -220,16 +270,35 @@ public class PanelFacturas extends JPanel {
             fireTableDataChanged();
         }
     }
+    /*public static void main(String[] args) {
 
-    // MAIN de prueba opcional
-    public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Test Panel Facturas");
+
+            Connection conn = DatabaseManager.getConnection();
+
+            HabitacionStorage habitacionStorage = new HabitacionStorage(conn);
+            HuespedStorage huespedStorage = new HuespedStorage(conn);
+            FacturaStorage facturaStorage = new FacturaStorage(conn);
+            ReservaStorage reservaStorage = new ReservaStorage(conn, habitacionStorage, huespedStorage, facturaStorage);
+
+            // Servicios
+            ReservaService reservaService = new ReservaService(reservaStorage);
+            FacturaService facturaService = new FacturaService(facturaStorage, reservaService);
+
+            // Panel + Presenter
+            PanelFacturas panel = new PanelFacturas();
+            FacturasPresenter presenter = new FacturasPresenter(panel, facturaService);
+
+            panel.setPresenter(presenter);
+
+            // Frame
+            JFrame frame = new JFrame("Test Facturas");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(1100, 700);
+            frame.setSize(1200, 800);
             frame.setLocationRelativeTo(null);
-            frame.setContentPane(new PanelFacturas());
+            frame.setContentPane(panel);
             frame.setVisible(true);
         });
-    }
+    }*/
+
 }

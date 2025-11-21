@@ -6,6 +6,10 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.CompoundBorder;
 
+import dominio.Habitacion;
+import aplicacion.habitacionUi.presenter.CrearHabitacionPresenter;
+import validaciones.InputException;
+
 public class DialogCrearHabitacion extends JDialog {
 
     private static final Color BG = new Color(245, 247, 250);
@@ -22,6 +26,14 @@ public class DialogCrearHabitacion extends JDialog {
 
     private JButton btnCrear;
 
+    // Presenter
+    private CrearHabitacionPresenter presenter;
+
+    public void setPresenter(CrearHabitacionPresenter presenter) {
+        this.presenter = presenter;
+        initPresenterListeners();
+    }
+
     public DialogCrearHabitacion(Window owner) {
         super(owner, "Crear Habitación", ModalityType.APPLICATION_MODAL);
 
@@ -33,6 +45,9 @@ public class DialogCrearHabitacion extends JDialog {
         setContentPane(buildMainPanel());
     }
 
+    // -----------------------------------------------------------
+    // Inicialización
+    // -----------------------------------------------------------
     private void initComponents() {
 
         txtNombre = new JTextField(20);
@@ -54,9 +69,8 @@ public class DialogCrearHabitacion extends JDialog {
         btnCrear.setBackground(ACCENT);
         btnCrear.setForeground(Color.WHITE);
 
-        // Listener del tipo para ajustar capacidad
         cboTipo.addActionListener(e -> actualizarCapacidad());
-        actualizarCapacidad(); // estado inicial
+        actualizarCapacidad();
     }
 
     private JPanel buildMainPanel() {
@@ -103,7 +117,7 @@ public class DialogCrearHabitacion extends JDialog {
 
         y++;
 
-        // Botón CREAR (sin botón cancelar)
+        // Botón CREAR
         gbc.gridx = 0;
         gbc.gridy = y;
         gbc.gridwidth = 2;
@@ -116,6 +130,9 @@ public class DialogCrearHabitacion extends JDialog {
         return global;
     }
 
+    // -----------------------------------------------------------
+    // Métodos auxiliares UI
+    // -----------------------------------------------------------
     private void addRow(JPanel panel, GridBagConstraints gbc,
                         int y, String label, JComponent comp) {
 
@@ -139,9 +156,9 @@ public class DialogCrearHabitacion extends JDialog {
         return p;
     }
 
-    // =======================================================
-    //   CAPACIDAD SEGÚN TIPO
-    // =======================================================
+    // -----------------------------------------------------------
+    //  CAPACIDAD SEGÚN TIPO
+    // -----------------------------------------------------------
     private void actualizarCapacidad() {
 
         String tipo = (String) cboTipo.getSelectedItem();
@@ -160,5 +177,53 @@ public class DialogCrearHabitacion extends JDialog {
                 spCapacidad.setEnabled(true);
             }
         }
+    }
+
+    // -----------------------------------------------------------
+    // Presenter listeners
+    // -----------------------------------------------------------
+    private void initPresenterListeners() {
+        btnCrear.addActionListener(e -> presenter.crearHabitacion());
+    }
+
+    // -----------------------------------------------------------
+    // Métodos requeridos por el Presenter
+    // -----------------------------------------------------------
+    public String getNombre() {
+        return txtNombre.getText().trim();
+    }
+
+    public String getDescripcion() {
+        return txtDescripcion.getText().trim();
+    }
+
+    public double getPrecioDouble() {
+        try {
+            return Double.parseDouble(txtPrecio.getText().trim());
+        } catch (NumberFormatException e) {
+            throw new InputException("El precio debe ser un número válido.");
+        }
+    }
+
+    public Habitacion.TipoHabitacion getTipoHabitacion() {
+        return Habitacion.TipoHabitacion.valueOf(
+                ((String) cboTipo.getSelectedItem()).toUpperCase()
+        );
+    }
+
+    public int getCapacidad() {
+        return ((Number) spCapacidad.getValue()).intValue();
+    }
+
+    public void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void showSuccess(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void cerrar() {
+        dispose();
     }
 }

@@ -1,7 +1,5 @@
 package aplicacion.reservaUi;
 
-import aplicacion.huespedUi.DialogCrearHuesped;
-
 import javax.swing.*;
 import java.awt.*;
 import javax.swing.border.EmptyBorder;
@@ -9,14 +7,22 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.CompoundBorder;
 import java.util.Date;
 
+import dto.HuespedListadoDTO;
+
+import aplicacion.reservaUi.presenter.CrearReservaPresenter;
+
 public class DialogCrearReserva extends JDialog {
 
-    // 🎨 Estilos
+    // Estilos
     private static final Color BG = new Color(245, 247, 250);
     private static final Color CARD = Color.WHITE;
     private static final Color ACCENT = new Color(0, 120, 215);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
     private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+
+    // MVP
+    private CrearReservaPresenter presenter;
+    public void setPresenter(CrearReservaPresenter presenter) { this.presenter = presenter; }
 
     // Datos huésped
     private JTextField txtIdHuesped;
@@ -46,7 +52,7 @@ public class DialogCrearReserva extends JDialog {
     public DialogCrearReserva(Window owner) {
         super(owner, "Crear Reserva", ModalityType.APPLICATION_MODAL);
 
-        setSize(650, 720);                    // Ventana más espaciosa
+        setSize(650, 720);
         setLocationRelativeTo(owner);
         setMinimumSize(new Dimension(650, 650));
 
@@ -58,43 +64,42 @@ public class DialogCrearReserva extends JDialog {
     private void initComponents() {
 
         txtIdHuesped = new JTextField(25);
+        txtIdHuesped.setEditable(true);
+
         txtDni = new JTextField(25);
         txtNombre = new JTextField(25);
         txtApellido = new JTextField(25);
         txtCorreo = new JTextField(25);
 
+        // = HUESPED =
         btnBuscarHuesped = new JButton("Buscar Huésped");
         btnCrearHuesped = new JButton("Crear Huésped");
 
-        // === FECHAS ===
+        // = FECHAS =
         spDesde = new JSpinner(new SpinnerDateModel());
         spDesde.setEditor(new JSpinner.DateEditor(spDesde, "dd/MM/yyyy"));
-        spDesde.setPreferredSize(new Dimension(90, 28));
 
         spHasta = new JSpinner(new SpinnerDateModel());
         spHasta.setEditor(new JSpinner.DateEditor(spHasta, "dd/MM/yyyy"));
-        spHasta.setPreferredSize(new Dimension(90, 28));
 
-        // === HABITACIÓN ===
+        // = HABITACION =
         txtHabitacionId = new JTextField(6);
+        txtHabitacionId.setEditable(false);
 
         btnSeleccionarHabitacion = new JButton("Seleccionar Habitación");
 
-        // === PAGO ===
+        // = PAGO =
         cboMetodoPago = new JComboBox<>(new String[]{"TRANSFERENCIA", "TARJETA"});
-        cboMetodoPago.setPreferredSize(new Dimension(140, 28));
+        cboCuotas = new JComboBox<>();
 
-        cboCuotas = new JComboBox<>(new Integer[]{1, 2, 3});
-        cboCuotas.setPreferredSize(new Dimension(80, 28));
+        actualizarCuotas();
 
         cboMetodoPago.addActionListener(e -> actualizarCuotas());
 
+        // = CONFIRMAR =
         btnConfirmar = new JButton("CONFIRMAR RESERVA");
         btnConfirmar.setBackground(ACCENT);
         btnConfirmar.setForeground(Color.WHITE);
-        btnConfirmar.setFocusPainted(false);
-
-        actualizarCuotas();
     }
 
     private JPanel buildMainPanel() {
@@ -122,7 +127,7 @@ public class DialogCrearReserva extends JDialog {
 
         int y = 0;
 
-        // HUESPED
+        // --------------- Huesped ---------------
         addRow(card, gbc, y++, "Huésped ID:", wrap(txtIdHuesped));
         addRow(card, gbc, y++, "DNI:", wrap(txtDni));
         addRow(card, gbc, y++, "Nombre:", wrap(txtNombre));
@@ -139,11 +144,11 @@ public class DialogCrearReserva extends JDialog {
         gbc.fill = GridBagConstraints.NONE;
         card.add(botonesH, gbc);
 
-        // FECHAS
+        // --------------- Fechas ---------------
         addRow(card, gbc, y++, "Desde:", wrap(spDesde));
         addRow(card, gbc, y++, "Hasta:", wrap(spHasta));
 
-        // HABITACIÓN
+        // --------------- Habitación ---------------
         JPanel habPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         habPanel.setOpaque(false);
 
@@ -155,19 +160,17 @@ public class DialogCrearReserva extends JDialog {
 
         gbc.gridx = 0;
         gbc.gridy = y;
-        gbc.fill = GridBagConstraints.NONE;
         card.add(new JLabel("Habitación:"), gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.NONE;
         card.add(habPanel, gbc);
         y++;
 
-        // PAGO
+        // --------------- Pago ---------------
         addRow(card, gbc, y++, "Método de Pago:", wrap(cboMetodoPago));
         addRow(card, gbc, y++, "Cuotas:", wrap(cboCuotas));
 
-        // CONFIRMAR
+        // --------------- Confirmar ---------------
         gbc.gridx = 0;
         gbc.gridy = y;
         gbc.gridwidth = 2;
@@ -189,15 +192,12 @@ public class DialogCrearReserva extends JDialog {
 
         gbc.gridx = 0;
         gbc.gridy = y;
-        gbc.fill = GridBagConstraints.NONE;
         panel.add(lbl, gbc);
 
         gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.NONE;
         panel.add(comp, gbc);
     }
 
-    /** Envuelve un campo para preservar su preferredSize */
     private JPanel wrap(JComponent comp) {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         p.setOpaque(false);
@@ -225,83 +225,84 @@ public class DialogCrearReserva extends JDialog {
     }
 
     // =======================================================
-    //   LISTENERS / INTEGRACIÓN DIÁLOGOS
+    //   LISTENERS MVP
     // =======================================================
     private void initListeners() {
 
-        // Buscar huésped
-        btnBuscarHuesped.addActionListener(e -> abrirDialogBuscarHuesped());
+        btnBuscarHuesped.addActionListener(e -> {
+            if (presenter != null) presenter.onBuscarHuesped();
+        });
 
-        // Crear huésped (ya creado DialogCrearHuesped)
         btnCrearHuesped.addActionListener(e -> {
-            DialogCrearHuesped dialog = new DialogCrearHuesped(
-                    SwingUtilities.getWindowAncestor(this)
-            );
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
-
-            // TODO: si DialogCrearHuesped devuelve el huésped creado,
-            // completarlo aquí.
+            if (presenter != null) presenter.onCrearHuesped();
         });
 
-        // Seleccionar habitación
-        btnSeleccionarHabitacion.addActionListener(e -> abrirDialogSeleccionarHabitacion());
+        btnSeleccionarHabitacion.addActionListener(e -> {
+            if (presenter != null) presenter.onSeleccionarHabitacion();
+        });
 
-        // Confirmar reserva
         btnConfirmar.addActionListener(e -> {
-            // TODO: construir DTO / comando y enviarlo a ReservaController / Sistema
-            System.out.println("[UI] Confirmar reserva (TODO implementar lógica real)");
-            dispose();
+            if (presenter != null) presenter.onConfirmarReserva();
         });
     }
 
-    private void abrirDialogBuscarHuesped() {
-
-        String idStr = txtIdHuesped.getText().trim();
-        String dni = txtDni.getText().trim();
-        String nombre = txtNombre.getText().trim();
-        String apellido = txtApellido.getText().trim();
-        String email = txtCorreo.getText().trim();
-
-        DialogBuscarHuesped dialog = new DialogBuscarHuesped(
-                SwingUtilities.getWindowAncestor(this),
-                idStr,
-                dni,
-                nombre,
-                apellido,
-                email
-        );
-
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-
-        DialogBuscarHuesped.HuespedSeleccionado sel = dialog.getSeleccionado();
-        if (sel != null) {
-            txtIdHuesped.setText(String.valueOf(sel.id));
-            txtDni.setText(sel.dni);
-            txtNombre.setText(sel.nombre);
-            txtApellido.setText(sel.apellido);
-            txtCorreo.setText(sel.email);
-        }
+    // =======================================================
+    //  MÉTODOS PARA USAR DESDE EL PRESENTER
+    // =======================================================
+    public void mostrarMensaje(String m) {
+        JOptionPane.showMessageDialog(this, m, "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void abrirDialogSeleccionarHabitacion() {
+    public void mostrarError(String m) {
+        JOptionPane.showMessageDialog(this, m, "Error", JOptionPane.ERROR_MESSAGE);
+    }
 
-        Date desde = (Date) spDesde.getValue();
-        Date hasta = (Date) spHasta.getValue();
+    public void cerrar() {
+        dispose();
+    }
 
-        DialogSeleccionarHabitacion dialog = new DialogSeleccionarHabitacion(
-                SwingUtilities.getWindowAncestor(this),
-                desde,
-                hasta
-        );
+    // ----------- Getters usados por el Presenter -----------
 
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
+    public String getIdHuesped() { return txtIdHuesped.getText(); }
+    public String getDni() { return txtDni.getText(); }
+    public String getNombre() { return txtNombre.getText(); }
+    public String getApellido() { return txtApellido.getText(); }
+    public String getCorreo() { return txtCorreo.getText(); }
 
-        DialogSeleccionarHabitacion.HabitacionSeleccionada sel = dialog.getSeleccionada();
-        if (sel != null) {
-            txtHabitacionId.setText(String.valueOf(sel.id));
-        }
+    public Date getFechaDesde() { return (Date) spDesde.getValue(); }
+    public Date getFechaHasta() { return (Date) spHasta.getValue(); }
+
+    public String getHabitacionId() { return txtHabitacionId.getText(); }
+
+    public String getMetodoPago() { return (String) cboMetodoPago.getSelectedItem(); }
+    public int getCuotas() { return (Integer) cboCuotas.getSelectedItem(); }
+
+    // -------- setters para completar datos desde presenter --------
+    public void setDatosHuesped(int id, String dni, String nombre, String apellido, String email) {
+        txtIdHuesped.setText(String.valueOf(id));
+        txtDni.setText(dni);
+        txtNombre.setText(nombre);
+        txtApellido.setText(apellido);
+        txtCorreo.setText(email);
+    }
+
+    public void completarHuesped(HuespedListadoDTO dto) {
+        txtIdHuesped.setText(String.valueOf(dto.id()));
+        txtDni.setText(dto.dni());
+
+        txtNombre.setText(dto.nombre());
+        txtApellido.setText(dto.apellido());
+
+        txtCorreo.setText(dto.email());
+    }
+
+    public Window getOwnerWindow() {
+        return SwingUtilities.getWindowAncestor(this);
+    }
+
+
+
+    public void setHabitacion(int idHabitacion) {
+        txtHabitacionId.setText(String.valueOf(idHabitacion));
     }
 }
